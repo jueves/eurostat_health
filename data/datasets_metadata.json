@@ -1,0 +1,30 @@
+{
+    "staff_all": {
+        "description": "Health personnel by NUTS 2 region.",
+        "url": "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/hlth_rs_prsrg.tsv.gz"
+    },
+    "staff_hospital": {
+        "description": "Health personnel employed in hospital.",
+        "url": "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/hlth_rs_prshp1.tsv.gz"
+    },
+    "deaths_stand": {
+        "description": "Causes of death - standardised death rate by NUTS 2 region of residence.",
+        "url": "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/hlth_cd_asdr2.tsv.gz"
+    },
+    "deaths_crude": {
+        "description": "Causes of death - crude death rate by NUTS 2 region of residence.",
+        "url": "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/hlth_cd_acdr2.tsv.gz"
+    },
+    "hosp_discharges_and_lenght_of_stay": {
+        "description": "Hospital discharges and length of stay for inpatient and curative care.",
+        "url": "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/hlth_co_dischls.tsv.gz"
+    },
+    "hosp_discharges": {
+        "description": "Hospital discharges by diagnosis and NUTS 2 regions, in-patients, per 100 000 inhabitants.",
+        "url": "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/hlth_co_disch2t.tsv.gz"
+    },
+    "length_of_stay": {
+        "description": "In-patient average length of stay (days) by NUTS 2 regions.",
+        "url": "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/hlth_co_inpstt.tsv.gz"
+    }
+}
