@@ -15,7 +15,7 @@
         "description": "Causes of death - crude death rate by NUTS 2 region of residence.",
         "url": "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/hlth_cd_acdr2.tsv.gz"
     },
-    "hosp_discharges_and_lenght_of_stay": {
+    "hosp_discharges_and_length_of_stay": {
         "description": "Hospital discharges and length of stay for inpatient and curative care.",
         "url": "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/hlth_co_dischls.tsv.gz"
     },
