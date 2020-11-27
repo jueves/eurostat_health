@@ -26,8 +26,5 @@
     "length_of_stay": {
         "description": "In-patient average length of stay (days) by NUTS 2 regions.",
         "url": "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/hlth_co_inpstt.tsv.gz"
-    },
-    "deaths_stand_country": {
-        "description": ""
     }
 }

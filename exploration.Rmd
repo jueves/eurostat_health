@@ -1,3 +1,17 @@
+---
+title: "Exploration"
+author: "Luis Cobiella Hernández"
+date: "27/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exploration
+
+```{r load, echo=FALSE}
 library(reticulate)
 library(ggplot2)
 library(plotly)
@@ -7,10 +21,11 @@ library(tidyr)
 
 source_python('download.py')
 source_python('transform.py')
+```
 
-###########################
-## Spanish professionals ##
-###########################
+## Spanish professionals
+
+```{r spanish_prof}
 # Import all professionals data
 staff_all <- import_eurostat_dataset('data/staff_all.gz')
 
@@ -47,12 +62,12 @@ for (i in 1:nrow(spain_trans)) {
 spain_trans %>% gather("year", "professionals", -geo, -region) -> spain_trans
 spain_trans$year <- as.numeric(spain_trans$year)
 
+```
+
+### Plot
+```{r plot, echo=FALSE}
 # Plot Comunidades Autónomas professionals
 p <- ggplot(spain_trans, aes(year, professionals, color=region))+geom_line()+
   labs(y='Professionals per 100.000hab', x='Year')
 ggplotly(p)
-
-##############################
-# Most frequent death causes #
-##############################
-
+```
