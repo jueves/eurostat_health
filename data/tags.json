@@ -1,14 +1,14 @@
 {
-  "b": "Break in time series",
-  "c": "Confidential",
-  "d": "Definition differs, see metadata",
-  "e": "Estimated",
-  "f": "Forecast",
-  "n": "Not significant",
-  "p": "Provisional",
-  "r": "Revised",
-  "s": "Eurostat estimate",
-  "u": "Low reliability",
-  "z": "Not applicable",
-  ":": "Not a tag. Especial value for <<Not available>>"
+    "b": "Break in time series",
+    "c": "Confidential",
+    "d": "Definition differs, see metadata",
+    "e": "Estimated",
+    "f": "Forecast",
+    "n": "Not significant",
+    "p": "Provisional",
+    "r": "Revised",
+    "s": "Eurostat estimate",
+    "u": "Low reliability",
+    "z": "Not applicable",
+    ":": "Not a tag. Especial value for <<Not available>>"
 }

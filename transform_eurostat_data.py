@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import re
 
-def import_eurostat_dataset(file_name, return_metadata=False):
+def transform_eurostat_data(file_name, return_metadata=False):
   '''
   Preprocess Eurostat data.
   file_name: Str with location of an Eurostat dataset .tsv file

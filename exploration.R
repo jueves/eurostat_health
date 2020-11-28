@@ -5,14 +5,15 @@ library(jsonlite)
 library(dplyr)
 library(tidyr)
 
-source_python('download.py')
-source_python('transform.py')
+source_python('metadata_ETL.py')
+source_python('download_data.py')
+source_python('transform_eurostat_data.py')
 
 ###########################
 ## Spanish professionals ##
 ###########################
 # Import all professionals data
-staff_all <- import_eurostat_dataset('data/staff_all.gz')
+staff_all <- transform_eurostat_data('data/staff_all.gz')
 
 # Import Spain NUTS2 codes
 spain_nuts <- fromJSON('data/spain_nuts2.json')
@@ -47,7 +48,7 @@ for (i in 1:nrow(spain_trans)) {
 spain_trans %>% gather("year", "professionals", -geo, -region) -> spain_trans
 spain_trans$year <- as.numeric(spain_trans$year)
 
-# Plot Comunidades Autónomas professionals
+# Plot professionals per region
 p <- ggplot(spain_trans, aes(year, professionals, color=region))+geom_line()+
   labs(y='Professionals per 100.000hab', x='Year')
 ggplotly(p)
@@ -55,4 +56,18 @@ ggplotly(p)
 ##############################
 # Most frequent death causes #
 ##############################
+deaths <- import_eurostat_dataset('data/deaths_stand.gz')
+deaths_sample <- deaths[sample(nrow(deaths), 500),]
+
+# Filter all ages, all Europe, both sexes.
+deaths %>%
+  filter(sex == 'T', age == 'TOTAL', geo == 'EU28') %>%
+  select(-c(unit, sex, age, geo)) %>%
+  gather("year", "deaths", -icd10) %>%
+  group_by(icd10) %>%
+  summarise(deaths=mean(deaths, na.rm = TRUE)) %>%
+  arrange(desc(deaths)) -> deaths_agg
+
+print("10 most frequent causes of death:")
+print(deaths_agg[1:10,1])
 

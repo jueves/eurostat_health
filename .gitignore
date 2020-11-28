@@ -3,6 +3,11 @@
 .RData
 .Ruserdata
 code.Rproj
-data/*.gz
 Descartado
+
+# Data files 
+data/*
 *.html
+!data/datasets_metadata.json
+!data/health_professionals_metadata.json
+!data/tags.json

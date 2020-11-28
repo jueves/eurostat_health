@@ -2,7 +2,6 @@ import requests
 import json
 import os.path
 
-# Load datasets metadata
 with open('data/datasets_metadata.json') as f:
   urls_dic = json.load(f)
 
