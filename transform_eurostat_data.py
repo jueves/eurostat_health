@@ -3,15 +3,14 @@ import pandas as pd
 import numpy as np
 import re
 
-def transform_eurostat_data(file_name, return_metadata=False):
+def transform_eurostat_data(file_name, na_rm=True):
   '''
   Preprocess Eurostat data.
   file_name: Str with location of an Eurostat dataset .tsv file
   returns:   Tuple with two pandas DataFrames. The first one has
              the values and the second one the metadata.
-  '''
   
-  '''
+  
   The data is half comma separed, half tab separated.
   In order to obtain columns we import it with pandas
   under both configurations and then merge them.
@@ -32,13 +31,13 @@ def transform_eurostat_data(file_name, return_metadata=False):
   mixed_column_label = list(data_tab)[0]
   data_tab.rename(columns={mixed_column_label: 'mixed'}, inplace=True)
   
-  # Get last non year column values
+  # Get last non-year-column values
   last_nonyear_col = []
   for string in data_tab.mixed:
     last_nonyear_col.append(string.split(',')[-1])
   data_tab.mixed = last_nonyear_col
   
-  # Get last non year column label
+  # Get last non-year-column label
   raw_col_label = mixed_column_label.split(',')[-1]
   col_label = re.match('\w+', raw_col_label)[0]
   data_tab = data_tab.rename(columns={'mixed': col_label})
@@ -57,54 +56,45 @@ def transform_eurostat_data(file_name, return_metadata=False):
   # Merge columns
   data = pd.concat([data_csv, data_tab], axis=1)
   
-  # Split letters
-  def extract_col_metadata(column):
-    '''
-    Takes a list of numbers with letters and returns a tuple which
-    first element is a list of the numbers and the second a list with
-    the strings for each number.
-    Example: fun(['23 p', '21 pd']) -> ([23, 21], ['p', 'pd'])
-    '''
-    numbers_list = []
-    letters_list = []
-    for value in column:
-      if isinstance(value, str):
-        number = re.findall('[\d,.]+', value)
-        # Some values don't have numbers, just
-        # metadata tags, so we turn the numeric
-        # DataFrame value to np.NaN
-        if len(number)==0:
-          number = np.NaN
-        else:
-          number = float(re.sub(',', '.', number[0]))
-        letters = re.findall('[a-zA-Z]', value)
-        letters = ''.join(letters)
-      else:
-        number = value
-        letters = ''
-      numbers_list.append(number)
-      letters_list.append(letters)
-    return((numbers_list, letters_list))
-  
-  # Create a metadata DataFrame for each year value
-  metadata = pd.DataFrame()
+  # Get a list of non year columns
+  non_year_cols = list()
   for col_name in list(data):
-    # Check if the column name is a year
-    re_output = re.fullmatch('\d\d\d\d', col_name)
-    if isinstance(re_output, re.Match):
-      # Procede with metadata extraction.
-      data_col, metadata_col = extract_col_metadata(data[col_name])
-      data[col_name] = data_col
-      metadata[col_name] = metadata_col
-    
-      # Print value counts
-      # Add value meaning from tags.json
-      print(col_name+':')
-      print(metadata[col_name].value_counts(), '\n')
+    col_match = re.match('\d\d\d\d', col_name)
+    if not isinstance(col_match, re.Match):
+      non_year_cols.append(col_name)
+      
+  # Melt year columns in a single variable
+  data = data.melt(id_vars=non_year_cols, var_name='year')
+  data.year = pd.to_numeric(data.year)
   
-  if return_metadata:
-    output = (data, metadata)
-  else:
-    output = data
-    
-  return(output)
+  # Extract string metadata from values
+  numbers_list = []
+  letters_list = []
+  
+  for index, row in data.iterrows():
+    value = row.value
+    if isinstance(value, str):
+      number = re.findall('[\d,.]+', value)
+      # Some values don't have numbers, just
+      # metadata tags, so we turn the numeric
+      # DataFrame value to np.NaN
+      if len(number)==0:
+        number = np.NaN
+      else:
+        number = float(re.sub(',', '.', number[0]))
+      letters = re.findall('[a-zA-Z]', value)
+      letters = ''.join(letters)
+    else:
+      number = value
+      letters = ''
+    numbers_list.append(number)
+    letters_list.append(letters)
+  
+  data.value = numbers_list
+  data['metadata'] = letters_list
+  
+  # Remove NaN values
+  if na_rm:
+    data.dropna(subset=['value'], inplace=True)
+  
+  return(data)

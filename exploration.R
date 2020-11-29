@@ -13,7 +13,7 @@ source_python('transform_eurostat_data.py')
 ## Spanish professionals ##
 ###########################
 # Import all professionals data
-staff_all <- transform_eurostat_data('data/staff_all.gz')
+staff_all <- transform_eurostat_data('data/staff_all.gz', na_rm=TRUE)
 
 # Import Spain NUTS2 codes
 spain_nuts <- fromJSON('data/spain_nuts2.json')
@@ -29,27 +29,18 @@ spain_staff <- staff_all[spain_index, ]
 # Aggregate all type of professionals per region.
 # Use professionals per 100.000hab as unit.
 spain_staff %>%
-  filter(unit == 'P_HTHAB') %>% select(-c(unit, isco08)) %>%
-  group_by(geo) %>% summarize_all(sum) -> spain_staff_agg
-
-# Transform for better compatibility with ggplot
-# Also remove years many NaN values.
-spain_trans <- spain_staff_agg %>%
-  select(c(geo, names(spain_staff_agg)[6:15]))
+  filter(unit == 'P_HTHAB') %>% select(-c(unit, isco08, metadata)) %>%
+  group_by(geo, year) %>% summarize_all(sum) -> spain_staff_agg
 
 # Create labeled region
-spain_trans$region <- ''
-for (i in 1:nrow(spain_trans)) {
-  this_geo <- spain_trans[[i, 'geo']]
-  spain_trans[i,'region'] <- spain_nuts[this_geo]
+spain_staff_agg$region <- ''
+for (i in 1:nrow(spain_staff_agg)) {
+  this_geo <- spain_staff_agg[[i, 'geo']]
+  spain_staff_agg[i,'region'] <- spain_nuts[this_geo]
 }
 
-# Create year attribute
-spain_trans %>% gather("year", "professionals", -geo, -region) -> spain_trans
-spain_trans$year <- as.numeric(spain_trans$year)
-
 # Plot professionals per region
-p <- ggplot(spain_trans, aes(year, professionals, color=region))+geom_line()+
+p <- ggplot(spain_staff_agg, aes(year, value, color=region))+geom_line()+
   labs(y='Professionals per 100.000hab', x='Year')
 ggplotly(p)
 

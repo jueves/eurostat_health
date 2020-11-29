@@ -28,7 +28,7 @@ else:
         dic_nuts[code] = row['NUTS level 2']
   
   # Export dictionary to json
-  with open(, 'w') as f:
+  with open(nuts_file_name, 'w') as f:
     json_dic = json.dumps(dic_nuts, indent=4)
     f.write(json_dic)
 
