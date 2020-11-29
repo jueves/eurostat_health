@@ -1,10 +1,8 @@
 import os.path
 import pandas as pd
 import re
-import requests
 import json
-from io import BytesIO
-from zipfile import ZipFile
+
 
 ###################
 # spain_nuts.json #
@@ -31,28 +29,3 @@ else:
   with open(nuts_file_name, 'w') as f:
     json_dic = json.dumps(dic_nuts, indent=4)
     f.write(json_dic)
-
-
-##############
-# icd10.json #
-##############
-# Creates a json file for ICD-10 CM codes and short names
-
-icd10_url = 'https://www.cms.gov/Medicare/Coding/ICD10/Downloads/2016-Code-Descriptions-in-Tabular-Order.zip'
-icd10_file_name = 'data/icd10.json'
-icd10_dic = dict()
-
-if os.path.isfile(icd10_file_name):
-  print('icd10.json is already downloaded.')
-  
-else:
-  resp = requests.get(icd10_url).content
-  data_zip = ZipFile(BytesIO(resp))
-  for line in data_zip.open('icd10cm_order_2016.txt').readlines():
-      code = line[6:14].strip().decode('utf-8')
-      name = line[16:77].strip().decode('utf-8')
-      icd10_dic[code] = name
-  
-  with open(icd10_file_name, 'w') as f:
-    json_file = json.dumps(icd10_dic, indent=4)
-    f.write(json_file)

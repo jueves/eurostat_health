@@ -11,3 +11,4 @@ data/*
 !data/datasets_metadata.json
 !data/health_professionals_metadata.json
 !data/tags.json
+!data/COD_2012_edited.csv
