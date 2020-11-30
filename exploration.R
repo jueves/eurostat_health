@@ -1,9 +1,6 @@
 library(reticulate)
-library(ggplot2)
 library(plotly)
 library(jsonlite)
-library(dplyr)
-library(tidyr)
 library(tidyverse)
 
 source_python('metadata_ETL.py')
@@ -67,34 +64,36 @@ ggplotly(p)
 # Most frequent death causes #
 ##############################
 deaths <- transform_eurostat_data('data/deaths_stand.gz')
+deaths_copy <- deaths
+deaths <- deaths_copy
 factor_cols <- c('unit', 'sex', 'age', 'icd10')
 deaths[,factor_cols] <- lapply(deaths[,factor_cols], factor)
 
-# Get death causes names
-# This file has been manually edited due to numerous and diverse format
-# inconsistencies in relation to codes found in data.
-icd10_table <- read.csv('data/COD_2012_edited.csv', stringsAsFactors = FALSE)
-icd10 <- icd10_table$DESC_EN
-names(icd10) <- icd10_table$ICD_10_edited
+# Get death causes name and ICD-10 level
+icd10_list <- fromJSON('data/icd10.json')
 
-for (i in 1:length(names(icd10))) {
-  code <- gsub(', ', '_', names(icd10)[i])
-  names(icd10)[i] <- gsub(' ', '', code)
-}
+deaths <- mutate(deaths, cause = recode_factor(deaths$icd10, !!!unlist(icd10_list$names)))
+deaths <- mutate(deaths, icd10_level = recode_factor(deaths$icd10, !!!unlist(icd10_list$levels)))
 
-deaths <- mutate(deaths, cause = recode_factor(deaths$icd10, !!!unlist(icd10)))
-
-# Filter all ages, all Europe, both sexes.
+# Aggregate all level 1 causes of death
 deaths %>%
-  filter(sex == 'T', age == 'TOTAL', geo == 'EU28') %>%
-  select(c(icd10, value)) %>%
-  group_by(icd10) %>%
+  filter(sex == 'T', age == 'TOTAL', geo == 'EU28', icd10_level == 1) %>%
+  select(c(icd10, value, cause, icd10_level)) %>%
+  group_by(cause) %>%
   summarise(deaths=mean(value, na.rm = TRUE)) %>%
   arrange(desc(deaths)) -> deaths_agg
 
-deaths_agg <- mutate(deaths_agg, cause = recode_factor(deaths_agg$icd10, !!!unlist(icd10)))
+# Create "other" category
+causes_order <- as.character(deaths_agg$cause)
+others_list <- causes_order[8:length(causes_order)]
+causes_order <- append(causes_order, 'Other')
 
-deaths7 <- deaths_agg[2:8,]
-ggplot(deaths7, aes(fct_reorder(cause, deaths), deaths))+geom_col()+coord_flip()+
+deaths_agg %>%
+  mutate(cause = fct_collapse(cause, Other=others_list)) %>%
+  group_by(cause) %>%
+  summarise(deaths=sum(deaths)) %>%
+  mutate(cause, cause = fct_reorder(cause, deaths)) %>%
+  mutate(cause, cause = fct_relevel(cause, 'Other')) -> deaths_agg_other
+
+ggplot(deaths_agg_other, aes(cause, deaths))+geom_col(fill="#698caf")+coord_flip()+
   labs(x="",y="Anual deaths per 100.000hab", title="Most common causes of death in Europe")
-
