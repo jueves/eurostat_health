@@ -2,6 +2,7 @@
 import pandas as pd
 import numpy as np
 import re
+from datetime import datetime
 
 def transform_eurostat_data(file_name, na_rm=True):
   '''
@@ -15,6 +16,8 @@ def transform_eurostat_data(file_name, na_rm=True):
   In order to obtain columns we import it with pandas
   under both configurations and then merge them.
   '''
+  
+  print('Start:', datetime.now())
   
   data_csv = pd.read_csv(file_name, sep=',', na_values=': ')
   data_tab = pd.read_csv(file_name, sep='\t', na_values=': ')
@@ -32,6 +35,8 @@ def transform_eurostat_data(file_name, na_rm=True):
   data_tab.rename(columns={mixed_column_label: 'mixed'}, inplace=True)
   
   # Get last non-year-column values
+  print('Split mixed column:', datetime.now())
+  
   last_nonyear_col = []
   for string in data_tab.mixed:
     last_nonyear_col.append(string.split(',')[-1])
@@ -54,6 +59,8 @@ def transform_eurostat_data(file_name, na_rm=True):
   data_csv = data_csv.drop(columns=[mixed_column_label])
   
   # Merge columns
+  print('Merge datasets', datetime.now())
+  
   data = pd.concat([data_csv, data_tab], axis=1)
   
   # Get a list of non year columns
@@ -64,37 +71,43 @@ def transform_eurostat_data(file_name, na_rm=True):
       non_year_cols.append(col_name)
       
   # Melt year columns in a single variable
+  print('Melt datasets:', datetime.now())
+  
   data = data.melt(id_vars=non_year_cols, var_name='year')
   data.year = pd.to_numeric(data.year)
   
   # Extract string metadata from values
-  numbers_list = []
-  letters_list = []
-  
-  for index, row in data.iterrows():
-    value = row.value
+  print('Start metadata extraction:', datetime.now())
+  def extract_values(value):
+    #if pd.notna(value):
     if isinstance(value, str):
-      number = re.findall('[\d,.]+', value)
+      value = re.findall('[\d,.]+', value)
       # Some values don't have numbers, just
       # metadata tags, so we turn the numeric
       # DataFrame value to np.NaN
-      if len(number)==0:
-        number = np.NaN
+      if len(value)==0:
+        value = np.NaN
       else:
-        number = float(re.sub(',', '.', number[0]))
-      letters = re.findall('[a-zA-Z]', value)
-      letters = ''.join(letters)
+        value = float(re.sub(',', '.', value[0]))
+    return(value)
+
+  def extract_metadata(value):
+    #if pd.notna(value):
+    if isinstance(value, str):
+      value = re.findall('[a-zA-Z]', value)
+      value = ''.join(value)
     else:
-      number = value
-      letters = ''
-    numbers_list.append(number)
-    letters_list.append(letters)
+      value = ''
+    return(value)
+
+  data['metadata'] = data.value.apply(extract_metadata)
+  data.value = data.value.apply(extract_values)
   
-  data.value = numbers_list
-  data['metadata'] = letters_list
+  print('End metadata extraction:', datetime.now())
   
   # Remove NaN values
   if na_rm:
     data.dropna(subset=['value'], inplace=True)
   
+  print('Completed:', datetime.now())
   return(data)
