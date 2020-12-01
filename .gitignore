@@ -4,6 +4,7 @@
 .Ruserdata
 code.Rproj
 Descartado
+__pycache__
 
 # Data files 
 data/*
