@@ -7,9 +7,9 @@ source_python('metadata_ETL.py')
 source_python('download_data.py')
 source_python('transform_eurostat_data.py')
 
-###########################
-## Spanish professionals ##
-###########################
+##########################
+## Health professionals ##
+##########################
 # Import all professionals data
 # 
 # Get also all NaN data, so the aggregation only returns valid values
@@ -49,7 +49,7 @@ p <- ggplot(spain_staff_region, aes(year, value, color=region))+geom_line()+
   labs(y='Professionals per 100.000hab', x='Year')+coord_cartesian(xlim=c(2005, 2016))
 ggplotly(p)
 
-# Aggregate by type of professional, all state.
+# Aggregate by type of professional, Spain totals.
 spain_staff %>%
   filter(unit == 'P_HTHAB') %>% select(c(year, prof, value)) %>%
   group_by(year, prof) %>% summarize_all(sum) -> spain_staff_prof
@@ -59,18 +59,23 @@ p <- ggplot(spain_staff_prof, aes(year, value, color=prof))+geom_line()+
   labs(y='Professionals per 100.000hab', x='Year')
 ggplotly(p)
 
+# Aggregate by type of professionals, Europe totals.
+staff_regions <- filter(staff_all, unit == 'P_HTHAB', geo != 'EU28', year>2008)
+
+my_colors = c("#698caf")
+ggplot(staff_regions, aes(prof, value))+geom_boxplot(fill=my_colors[1])+
+  labs(title="Health professionals in european regions from 2009 to 2019",
+       x="", y="Profesionals per 100.000 hab")
 
 ##############################
 # Most frequent death causes #
 ##############################
 deaths <- transform_eurostat_data('data/deaths_stand.gz')
-deaths_copy <- deaths
-deaths <- deaths_copy
 factor_cols <- c('unit', 'sex', 'age', 'icd10')
 deaths[,factor_cols] <- lapply(deaths[,factor_cols], factor)
 
 # Get death causes name and ICD-10 level
-icd10_list <- fromJSON('data/icd10.json')
+icd10_list <- fromJSON('data/icd10_v2007.json')
 
 deaths <- mutate(deaths, cause = recode_factor(deaths$icd10, !!!unlist(icd10_list$names)))
 deaths <- mutate(deaths, icd10_level = recode_factor(deaths$icd10, !!!unlist(icd10_list$levels)))
@@ -83,10 +88,8 @@ deaths %>%
   summarise(deaths=mean(value, na.rm = TRUE)) %>%
   arrange(desc(deaths)) -> deaths_agg
 
-# Create "other" category
-causes_order <- as.character(deaths_agg$cause)
-others_list <- causes_order[8:length(causes_order)]
-causes_order <- append(causes_order, 'Other')
+# Create "Other" category
+others_list <- as.character(deaths_agg$cause[8:nrow(deaths_agg)])
 
 deaths_agg %>%
   mutate(cause = fct_collapse(cause, Other=others_list)) %>%
@@ -95,5 +98,12 @@ deaths_agg %>%
   mutate(cause, cause = fct_reorder(cause, deaths)) %>%
   mutate(cause, cause = fct_relevel(cause, 'Other')) -> deaths_agg_other
 
-ggplot(deaths_agg_other, aes(cause, deaths))+geom_col(fill="#698caf")+coord_flip()+
+# Show barplot
+ggplot(deaths_agg_other, aes(cause, deaths))+geom_col(fill=my_colors[1])+coord_flip()+
   labs(x="",y="Anual deaths per 100.000hab", title="Most common causes of death in Europe")
+
+##################################
+# Average hospitalization length #
+##################################
+length_stay <- transform_eurostat_data('data/length_of_stay.gz')
+
