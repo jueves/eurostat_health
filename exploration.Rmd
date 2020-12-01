@@ -9,65 +9,117 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Exploration
-
-```{r load, echo=FALSE}
+# Exploración de datos sanitarios de Eurostat
+## Carga inicial
+Carga de dependencias, descarga de archivos y preparación de metadatos.
+```{r load, message=FALSE}
 library(reticulate)
-library(ggplot2)
 library(plotly)
 library(jsonlite)
-library(dplyr)
-library(tidyr)
+library(tidyverse)
 
-source_python('download.py')
-source_python('transform.py')
+source_python('metadata_ETL.py')
+source_python('download_data.py')
+source_python('transform_eurostat_data.py')
 ```
 
-## Spanish professionals
+## Categorías de los profesionales de la salud en España
+En la importación de los datos de profesionales sanitarios incluímos también los valores NaN. Esto permitirá que sólo sean agregadas aquellas categorías para las que existen valores de todos sus elementos. Lo contrario produciría resultados erroneos, especialmente en casos como este en el que el método de agregación es la suma.
 
 ```{r spanish_prof}
-# Import all professionals data
-staff_all <- import_eurostat_dataset('data/staff_all.gz')
+# Import and process data
+staff_all <- transform_eurostat_data('data/staff_all.gz', na_rm=FALSE)
+staff_all <- mutate(staff_all, geo = as.factor(staff_all$geo),
+                               isco08 = as.factor(staff_all$isco08),
+                               unit = as.factor(staff_all$unit))
 
-# Import Spain NUTS2 codes
+# Get geo and isco08 names list
 spain_nuts <- fromJSON('data/spain_nuts2.json')
+isco08 <- fromJSON('data/health_professionals_metadata.json')
+for (i in 1:length(names(isco08))) {
+  isco08[[i]] <- isco08[[i]][[1]]
+}
+
+# Create profession name attribute
+staff_all <- mutate(staff_all, prof = recode_factor(staff_all$isco08, !!!unlist(isco08)))
 
 # Filter Spanish data
-spain_index = c()
-for (location in staff_all$geo){
-  is_from_spain <- location %in% names(spain_nuts)
-  spain_index <- append(spain_index, is_from_spain)
-}
-spain_staff <- staff_all[spain_index, ]
+spain_staff <- filter(staff_all, geo %in% names(spain_nuts))
 
+# Create region name atribute
+spain_staff <- mutate(spain_staff, region = recode_factor(spain_staff$geo,
+                                                          !!!unlist(spain_nuts)))
+
+```
+
+```{r prof_per_region, echo=FALSE}
 # Aggregate all type of professionals per region.
 # Use professionals per 100.000hab as unit.
 spain_staff %>%
-  filter(unit == 'P_HTHAB') %>% select(-c(unit, isco08)) %>%
-  group_by(geo) %>% summarize_all(sum) -> spain_staff_agg
+  filter(unit == 'P_HTHAB') %>% select(c(region, year, value)) %>%
+  group_by(region, year) %>% summarize_all(sum) -> spain_staff_region
 
-# Transform for better compatibility with ggplot
-# Also remove years many NaN values.
-spain_trans <- spain_staff_agg %>%
-  select(c(geo, names(spain_staff_agg)[6:15]))
-
-# Create labeled region
-spain_trans$region <- ''
-for (i in 1:nrow(spain_trans)) {
-  this_geo <- spain_trans[[i, 'geo']]
-  spain_trans[i,'region'] <- spain_nuts[this_geo]
-}
-
-# Create year attribute
-spain_trans %>% gather("year", "professionals", -geo, -region) -> spain_trans
-spain_trans$year <- as.numeric(spain_trans$year)
-
+# Plot professionals per region
+p <- ggplot(spain_staff_region, aes(year, value, color=region))+geom_line()+
+  labs(y='Professionals per 100.000hab', x='Year')+coord_cartesian(xlim=c(2005, 2016))
+ggplotly(p)
 ```
 
-### Plot
-```{r plot, echo=FALSE}
-# Plot Comunidades Autónomas professionals
-p <- ggplot(spain_trans, aes(year, professionals, color=region))+geom_line()+
+```{r prof_categ_spain}
+# Aggregate by type of professional, Spain totals.
+spain_staff %>%
+  filter(unit == 'P_HTHAB') %>% select(c(year, prof, value)) %>%
+  group_by(year, prof) %>% summarize_all(sum) -> spain_staff_prof
+
+# Plot professionals per category
+p <- ggplot(spain_staff_prof, aes(year, value, color=prof))+geom_line()+
   labs(y='Professionals per 100.000hab', x='Year')
 ggplotly(p)
+```
+
+```{r prof_categ_europe}
+# Aggregate by type of professionals, Europe totals.
+staff_regions <- filter(staff_all, unit == 'P_HTHAB', geo != 'EU28', year>2008)
+
+my_colors = c("#698caf")
+ggplot(staff_regions, aes(prof, value))+geom_boxplot(fill=my_colors[1])+
+  labs(title="Health professionals in european regions from 2009 to 2019",
+       x="", y="Profesionals per 100.000 hab")
+```
+
+## Muertes estandarizadas
+```{r death_stand}
+deaths <- transform_eurostat_data('data/deaths_stand.gz')
+factor_cols <- c('unit', 'sex', 'age', 'icd10')
+deaths[,factor_cols] <- lapply(deaths[,factor_cols], factor)
+
+# Get death causes name and ICD-10 level
+icd10_list <- fromJSON('data/icd10_v2007.json')
+
+deaths <- mutate(deaths, cause = recode_factor(deaths$icd10, !!!unlist(icd10_list$names)))
+deaths <- mutate(deaths, icd10_level = recode_factor(deaths$icd10, !!!unlist(icd10_list$levels)))
+
+# Aggregate all level 1 causes of death
+deaths %>%
+  filter(sex == 'T', age == 'TOTAL', geo == 'EU28', icd10_level == 1) %>%
+  select(c(icd10, value, cause, icd10_level)) %>%
+  group_by(cause) %>%
+  summarise(deaths=mean(value, na.rm = TRUE)) %>%
+  arrange(desc(deaths)) -> deaths_agg
+```
+
+```{r death_stand_plot}
+# Create "Other" category
+others_list <- as.character(deaths_agg$cause[8:nrow(deaths_agg)])
+
+deaths_agg %>%
+  mutate(cause = fct_collapse(cause, Other=others_list)) %>%
+  group_by(cause) %>%
+  summarise(deaths=sum(deaths)) %>%
+  mutate(cause, cause = fct_reorder(cause, deaths)) %>%
+  mutate(cause, cause = fct_relevel(cause, 'Other')) -> deaths_agg_other
+
+# Show barplot
+ggplot(deaths_agg_other, aes(cause, deaths))+geom_col(fill=my_colors[1])+coord_flip()+
+  labs(x="",y="Anual deaths per 100.000hab", title="Most common causes of death in Europe")
 ```
