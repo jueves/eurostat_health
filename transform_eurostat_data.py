@@ -79,7 +79,6 @@ def transform_eurostat_data(file_name, na_rm=True):
   # Extract string metadata from values
   print('Start metadata extraction:', datetime.now())
   def extract_values(value):
-    #if pd.notna(value):
     if isinstance(value, str):
       value = re.findall('[\d,.]+', value)
       # Some values don't have numbers, just
@@ -92,7 +91,6 @@ def transform_eurostat_data(file_name, na_rm=True):
     return(value)
 
   def extract_metadata(value):
-    #if pd.notna(value):
     if isinstance(value, str):
       value = re.findall('[a-zA-Z]', value)
       value = ''.join(value)
