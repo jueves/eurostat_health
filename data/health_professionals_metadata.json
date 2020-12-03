@@ -1,4 +1,4 @@
-﻿{
+{
   "OC221": {
     "name": "Physicians",
     "description": "Physicians  (medical  doctors)  as  defined  by  ISCO  08  (code  221)  study,  diagnose,  treat  and prevent  illness,  disease,  injury,  and  other  physical  and  mental  impairments  in  humans  through the  application  of  the  principles  and  procedures  of  modern  medicine.  They  plan,  supervise  and evaluate  the  implementation  of  care  and  treatment  plans  by  other  health  care  providers,  and conduct medical education and research activities."
@@ -16,7 +16,31 @@
     "description": "Physiotherapists assess, plan and implement rehabilitativeprograms that improve or restore human motor functions, maximize movement ability,relieve pain syndromes, and treat or prevent physical challenges associated withinjuries, diseases and other impairments. They apply a broad range of physicaltherapies and techniques such as movement, ultrasound, heating, laser and othertechniques."
   },
   "OC222_322": {
-    "name": "Nursing professionals and midwives.",
+    "name": "Nursing professionals and midwives",
     "description": "As selected by Eurostat data browser, anyway, data browser menu labels it as OC222_32222 and if we check the metadata anexes found in https://ec.europa.eu/eurostat/cache/metadata/en/hlth_res_esms.htm, we see that in fact codes for all nursing professionals and midwives must be 2222, 3222 and 2221. And also 3221 if we want to include Associate professional nurses."
+  },
+  "OC222_3222": {
+    "name": "Nursing professionals and midwives (hosp)",
+    "description": "The correct label should be OC2222-3222, because those are the ISCO08 codes for these professionals, but the data is labeled as OC222-3222. Nursing  professionals assume  responsibility  for the planning  and  management of the care of  patients, including  the supervision  of other health care  workers, working  autonomously  or in teams  with medical  doctors  and  others in  the practical  application  of  preventive and  curative  measures."
+  },
+  "OC3221": {
+    "name": "Associate professional nurses",
+    "description": "Nursing  associate  professionals generally  work under the supervision  of,  and  in support of  implementation of  health care,  treatment and  referrals plans established  by  medical,  nursing  and  other health  professionals"
+  },
+  "OC5321": {
+    "name": "Health care assistants",
+    "description": "Health  care assistants(ISCO-08 code:  5321) provide direct  personal  care and assistance  with activities  of  daily  living  to patients and  residents in  a variety  of health  care settings  such  as  hospitals,  clinics,  and  residential  nursing  care facilities.  They  generally  work in implementationof established  care plans  and practices,  and  under the direct  supervision  of  medical,  nursing  or other health professionals  or associate  professionals."
+  },
+  "OTH_SERV": {
+    "name": "Other health service providers",
+    "description": "Inclusion: Dentists, Pharmacists, Physiotherapists, Psychologists, Dieteticians, Audiologists and speech therapists, Laboratory assistants, Other health professionals and associate professionals."
+  },
+  "OTH_HOSP": {
+    "name": "Other hospital staff",
+    "description": "Other employees not elsewhere classified."
+  },
+  "HOSP": {
+    "name": "Total hospital employment",
+    "description": "Number of persons employed (head counts), and number of full-time equivalent (FTE) persons employed in general and specialised hospitals. Self-employed are included. Inclusion: Service contracts with non-employed health professionals on treatment of hospital patients (head counts)."
   }
 }
