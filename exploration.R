@@ -1,35 +1,13 @@
-library(reticulate)
-library(plotly)
-library(jsonlite)
-library(tidyverse)
+source("preprocess.R")
 
-source_python('metadata_ETL.py')
-source_python('download_data.py')
-source_python('transform_eurostat_data.py')
+# Health professionals ------------------
+head(staff_all)
+summary(staff_all)
 
-##########################
-## Health professionals ##
-##########################
-# Import all professionals data
-# 
-# Get also all NaN data, so the aggregation only returns valid values
-# when there are measurements for every type of professionals in a specific
-# year and region.
-
-staff_all <- transform_eurostat_data('data/staff_all.gz', na_rm=FALSE)
-staff_all <- mutate(staff_all, geo = as.factor(staff_all$geo),
-                               isco08 = as.factor(staff_all$isco08),
-                               unit = as.factor(staff_all$unit))
-
-# Get geo and isco08 names list
-spain_nuts <- fromJSON('data/spain_nuts2.json')
-isco08 <- fromJSON('data/health_professionals_metadata.json')
-for (i in 1:length(names(isco08))) {
-  isco08[[i]] <- isco08[[i]][[1]]
-}
-
-# Create profession name attribute
-staff_all <- mutate(staff_all, prof = recode_factor(staff_all$isco08, !!!unlist(isco08)))
+ggplot(staff_all, aes(value))+geom_histogram()+labs(title="Num of professionals, all values")
+staff_all %>%
+  filter(value > 10000) %>%
+  ggplot(aes(value))+geom_histogram()+labs(title="Num of professionals, only values over 10.000")
 
 # Filter Spanish data
 spain_staff <- filter(staff_all, geo %in% names(spain_nuts))
@@ -62,23 +40,18 @@ ggplotly(p)
 # Aggregate by type of professionals, Europe totals.
 staff_regions <- filter(staff_all, unit == 'P_HTHAB', geo != 'EU28', year>2008)
 
-my_colors = c("#698caf")
+my_colors = c("#698caf", "#b6191d")
 ggplot(staff_regions, aes(prof, value))+geom_boxplot(fill=my_colors[1])+
   labs(title="Health professionals in european regions from 2009 to 2019",
        x="", y="Profesionals per 100.000 hab")
 
-##############################
-# Most frequent death causes #
-##############################
-deaths <- transform_eurostat_data('data/deaths_stand.gz')
-factor_cols <- c('unit', 'sex', 'age', 'icd10')
-deaths[,factor_cols] <- lapply(deaths[,factor_cols], factor)
+# Standardized causes of death -------------------------
+head(deaths)
+summary(deaths)
 
-# Get death causes name and ICD-10 level
-icd10_list <- fromJSON('data/icd10_v2007.json')
-
-deaths <- mutate(deaths, cause = recode_factor(deaths$icd10, !!!unlist(icd10_list$names)))
-deaths <- mutate(deaths, icd10_level = recode_factor(deaths$icd10, !!!unlist(icd10_list$levels)))
+ggplot(deaths, aes(value))+geom_histogram()+labs(title="Num of standarized deaths per observation",
+                                                 x="Num of deaths in observation",
+                                                 y="Num of observations")
 
 # Aggregate all level 1 causes of death
 deaths %>%
@@ -102,8 +75,48 @@ deaths_agg %>%
 ggplot(deaths_agg_other, aes(cause, deaths))+geom_col(fill=my_colors[1])+coord_flip()+
   labs(x="",y="Anual deaths per 100.000hab", title="Most common causes of death in Europe")
 
-##################################
-# Average hospitalization length #
-##################################
-length_stay <- transform_eurostat_data('data/length_of_stay.gz')
 
+# Average hospitalization length -------------------------
+head(length_stay)
+summary(length_stay)
+
+length_stay %>%
+  group_by(age) %>%
+  filter(value < quantile(value, probs=0.97)) %>%
+  ggplot(aes(age, value))+geom_boxplot(fill=my_colors[2])
+
+# Hospital discharges -------------------------------
+head(hospital_discharges)
+summary(hospital_discharges)
+
+ggplot(hospital_discharges, aes(value))+geom_histogram()+labs(title="Hospital discharges")
+hospital_discharges %>%
+  filter(value < quantile(value, prob=0.97)) %>%
+  ggplot(aes(value))+geom_histogram()+labs(title="Hospital discharges under quantile 0.97")
+
+# Aggregate all level 1 causes of death
+hospital_discharges %>%
+  filter(age == 'TOTAL', icd10_level == 1) %>%
+  select(c(icd10, value, cause, icd10_level)) %>%
+  group_by(cause) %>%
+  summarise(value=mean(value, na.rm = TRUE)) %>%
+  arrange(desc(value)) -> hospital_discharges_agg
+
+others_list <- as.character(hospital_discharges_agg$cause[8:nrow(hospital_discharges_agg)])
+
+hospital_discharges_agg %>%
+  mutate(cause = fct_collapse(cause, Other=others_list)) %>%
+  group_by(cause) %>%
+  summarise(value=sum(value)) %>%
+  mutate(cause, cause = fct_reorder(cause, value)) %>%
+  mutate(cause, cause = fct_relevel(cause, 'Other')) -> hospital_discharges_agg_other
+
+ggplot(hospital_discharges_agg_other, aes(cause, value))+geom_col(fill=my_colors[2])+coord_flip()+
+  labs(x="",y="Discharges", title="Most common causes of discharge in Europe")
+
+# Hospital discharges and average hospitalization length ------------------------
+head(discharge_stay)
+summary(discharge_stay)
+
+# Geo values are only NUTS0
+levels(discharge_stay$geo)
