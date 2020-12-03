@@ -17,7 +17,7 @@ def transform_eurostat_data(file_name, na_rm=True):
   under both configurations and then merge them.
   '''
   
-  print('Start:', datetime.now())
+  #print('Start:', datetime.now())
   
   data_csv = pd.read_csv(file_name, sep=',', na_values=': ')
   data_tab = pd.read_csv(file_name, sep='\t', na_values=': ')
@@ -35,7 +35,7 @@ def transform_eurostat_data(file_name, na_rm=True):
   data_tab.rename(columns={mixed_column_label: 'mixed'}, inplace=True)
   
   # Get last non-year-column values
-  print('Split mixed column:', datetime.now())
+  #print('Split mixed column:', datetime.now())
   
   last_nonyear_col = []
   for string in data_tab.mixed:
@@ -59,7 +59,7 @@ def transform_eurostat_data(file_name, na_rm=True):
   data_csv = data_csv.drop(columns=[mixed_column_label])
   
   # Merge columns
-  print('Merge datasets', datetime.now())
+  #print('Merge datasets', datetime.now())
   
   data = pd.concat([data_csv, data_tab], axis=1)
   
@@ -71,13 +71,13 @@ def transform_eurostat_data(file_name, na_rm=True):
       non_year_cols.append(col_name)
       
   # Melt year columns in a single variable
-  print('Melt datasets:', datetime.now())
+  #print('Melt datasets:', datetime.now())
   
   data = data.melt(id_vars=non_year_cols, var_name='year')
   data.year = pd.to_numeric(data.year)
   
   # Extract string metadata from values
-  print('Start metadata extraction:', datetime.now())
+  #print('Start metadata extraction:', datetime.now())
   def extract_values(value):
     if isinstance(value, str):
       value = re.findall('[\d,.]+', value)
@@ -101,11 +101,11 @@ def transform_eurostat_data(file_name, na_rm=True):
   data['metadata'] = data.value.apply(extract_metadata)
   data.value = data.value.apply(extract_values)
   
-  print('End metadata extraction:', datetime.now())
+  #print('End metadata extraction:', datetime.now())
   
   # Remove NaN values
   if na_rm:
     data.dropna(subset=['value'], inplace=True)
   
-  print('Completed:', datetime.now())
+  #print('Completed:', datetime.now())
   return(data)
