@@ -1,6 +1,7 @@
 source("preprocess.R")
 
-# Health professionals ------------------
+# Health professionals ---------------------------------------------------------
+staff_all <- get_staff_all()
 head(staff_all)
 summary(staff_all)
 
@@ -40,16 +41,34 @@ ggplotly(p)
 # Aggregate by type of professionals, Europe totals.
 staff_regions <- filter(staff_all, unit == 'P_HTHAB', geo != 'EU28', year>2008)
 
-my_colors = c("#698caf", "#b6191d")
-ggplot(staff_regions, aes(prof, value))+geom_boxplot(fill=my_colors[1])+
+ggplot(staff_regions, aes(prof, value))+geom_boxplot()+
   labs(title="Health professionals in european regions from 2009 to 2019",
        x="", y="Profesionals per 100.000 hab")
 
-# Standardized causes of death -------------------------
+# Hospital staff ---------------------------------------------------------------
+staff_hosp <- get_staff_hosp()
+head(staff_hosp)
+summary(staff_hosp)
+
+# Geo values are only NUTS0
+levels(staff_hosp$geo)
+
+staff_hosp %>%
+  filter(between(year, 2007, 2017)) %>%
+  group_by(prof, year) %>%
+  summarise(value=sum(value)) %>%
+  group_by(prof) %>%
+  summarise(value=mean(value)) %>%
+  ggplot(aes(fct_rev(prof), value))+geom_col()+coord_flip()+labs(x="",
+                                                                 y="2007-2017 average")
+
+
+# Crude causes of death -------------------------
+deaths <- get_deaths()
 head(deaths)
 summary(deaths)
 
-ggplot(deaths, aes(value))+geom_histogram()+labs(title="Num of standarized deaths per observation",
+ggplot(deaths, aes(value))+geom_histogram()+labs(title="Num of deaths per observation",
                                                  x="Num of deaths in observation",
                                                  y="Num of observations")
 
@@ -72,20 +91,23 @@ deaths_agg %>%
   mutate(cause, cause = fct_relevel(cause, 'Other')) -> deaths_agg_other
 
 # Show barplot
-ggplot(deaths_agg_other, aes(cause, deaths))+geom_col(fill=my_colors[1])+coord_flip()+
+ggplot(deaths_agg_other, aes(cause, deaths))+geom_col()+coord_flip()+
   labs(x="",y="Anual deaths per 100.000hab", title="Most common causes of death in Europe")
 
-
-# Average hospitalization length -------------------------
+rm(deaths)
+# Average hospitalization length -----------------------------------------------
+length_stay <- get_length_stay()
 head(length_stay)
 summary(length_stay)
 
 length_stay %>%
   group_by(age) %>%
   filter(value < quantile(value, probs=0.97)) %>%
-  ggplot(aes(age, value))+geom_boxplot(fill=my_colors[2])
+  ggplot(aes(age, value))+geom_boxplot()
 
-# Hospital discharges -------------------------------
+rm(length_stay)
+# Hospital discharges ----------------------------------------------------------
+hospital_discharges <- get_hospital_discharges()
 head(hospital_discharges)
 summary(hospital_discharges)
 
@@ -111,10 +133,12 @@ hospital_discharges_agg %>%
   mutate(cause, cause = fct_reorder(cause, value)) %>%
   mutate(cause, cause = fct_relevel(cause, 'Other')) -> hospital_discharges_agg_other
 
-ggplot(hospital_discharges_agg_other, aes(cause, value))+geom_col(fill=my_colors[2])+coord_flip()+
+ggplot(hospital_discharges_agg_other, aes(cause, value))+geom_col()+coord_flip()+
   labs(x="",y="Discharges", title="Most common causes of discharge in Europe")
 
+rm(hospital_discharges)
 # Hospital discharges and average hospitalization length ------------------------
+discharge_stay <- get_discharge_stay()
 head(discharge_stay)
 summary(discharge_stay)
 

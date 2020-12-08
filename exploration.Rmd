@@ -1,7 +1,7 @@
 ---
-title: "Exploration"
+title: "Exploración de datos sanitarios de Eurostat"
 author: "Luis Cobiella Hernández"
-date: "27/11/2020"
+date: "7/12/2020"
 output: html_document
 ---
 
@@ -9,39 +9,23 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Exploración de datos sanitarios de Eurostat
-## Carga inicial
-Carga de dependencias, descarga de archivos y preparación de metadatos.
-```{r load, message=FALSE}
-library(reticulate)
-library(plotly)
-library(jsonlite)
-library(tidyverse)
-
-source_python('metadata_ETL.py')
-source_python('download_data.py')
-source_python('transform_eurostat_data.py')
+## Preprocesado
+Descarga de datos y metados, preprocesado y carga.
+```{r preprocess, results="hide", message=FALSE}
+source("preprocess.R")
 ```
 
-## Categorías de los profesionales de la salud en España
-En la importación de los datos de profesionales sanitarios incluímos también los valores NaN. Esto permitirá que sólo sean agregadas aquellas categorías para las que existen valores de todos sus elementos. Lo contrario produciría resultados erroneos, especialmente en casos como este en el que el método de agregación es la suma.
 
-```{r spanish_prof}
-# Import and process data
-staff_all <- transform_eurostat_data('data/staff_all.gz', na_rm=FALSE)
-staff_all <- mutate(staff_all, geo = as.factor(staff_all$geo),
-                               isco08 = as.factor(staff_all$isco08),
-                               unit = as.factor(staff_all$unit))
+## Profesionales sanitarios
+```{r health_staff}
+staff_all <- get_staff_all()
+head(staff_all)
+summary(staff_all)
 
-# Get geo and isco08 names list
-spain_nuts <- fromJSON('data/spain_nuts2.json')
-isco08 <- fromJSON('data/health_professionals_metadata.json')
-for (i in 1:length(names(isco08))) {
-  isco08[[i]] <- isco08[[i]][[1]]
-}
-
-# Create profession name attribute
-staff_all <- mutate(staff_all, prof = recode_factor(staff_all$isco08, !!!unlist(isco08)))
+ggplot(staff_all, aes(value))+geom_histogram()+labs(title="Num of professionals, all values")
+staff_all %>%
+  filter(value > 10000) %>%
+  ggplot(aes(value))+geom_histogram()+labs(title="Num of professionals, only values over 10.000")
 
 # Filter Spanish data
 spain_staff <- filter(staff_all, geo %in% names(spain_nuts))
@@ -50,9 +34,6 @@ spain_staff <- filter(staff_all, geo %in% names(spain_nuts))
 spain_staff <- mutate(spain_staff, region = recode_factor(spain_staff$geo,
                                                           !!!unlist(spain_nuts)))
 
-```
-
-```{r prof_per_region, echo=FALSE}
 # Aggregate all type of professionals per region.
 # Use professionals per 100.000hab as unit.
 spain_staff %>%
@@ -63,9 +44,7 @@ spain_staff %>%
 p <- ggplot(spain_staff_region, aes(year, value, color=region))+geom_line()+
   labs(y='Professionals per 100.000hab', x='Year')+coord_cartesian(xlim=c(2005, 2016))
 ggplotly(p)
-```
 
-```{r prof_categ_spain}
 # Aggregate by type of professional, Spain totals.
 spain_staff %>%
   filter(unit == 'P_HTHAB') %>% select(c(year, prof, value)) %>%
@@ -75,29 +54,44 @@ spain_staff %>%
 p <- ggplot(spain_staff_prof, aes(year, value, color=prof))+geom_line()+
   labs(y='Professionals per 100.000hab', x='Year')
 ggplotly(p)
-```
 
-```{r prof_categ_europe}
 # Aggregate by type of professionals, Europe totals.
 staff_regions <- filter(staff_all, unit == 'P_HTHAB', geo != 'EU28', year>2008)
 
-my_colors = c("#698caf")
-ggplot(staff_regions, aes(prof, value))+geom_boxplot(fill=my_colors[1])+
+ggplot(staff_regions, aes(prof, value))+geom_boxplot()+
   labs(title="Health professionals in european regions from 2009 to 2019",
        x="", y="Profesionals per 100.000 hab")
+
 ```
 
-## Muertes estandarizadas
-```{r death_stand}
-deaths <- transform_eurostat_data('data/deaths_stand.gz')
-factor_cols <- c('unit', 'sex', 'age', 'icd10')
-deaths[,factor_cols] <- lapply(deaths[,factor_cols], factor)
+## Profesionales trabajando en hospitales
+```{r staff_hosp}
+staff_hosp <- get_staff_hosp()
+head(staff_hosp)
+summary(staff_hosp)
 
-# Get death causes name and ICD-10 level
-icd10_list <- fromJSON('data/icd10_v2007.json')
+# Geo values are only NUTS0
+levels(staff_hosp$geo)
 
-deaths <- mutate(deaths, cause = recode_factor(deaths$icd10, !!!unlist(icd10_list$names)))
-deaths <- mutate(deaths, icd10_level = recode_factor(deaths$icd10, !!!unlist(icd10_list$levels)))
+staff_hosp %>%
+  filter(between(year, 2007, 2017)) %>%
+  group_by(prof, year) %>%
+  summarise(value=sum(value)) %>%
+  group_by(prof) %>%
+  summarise(value=mean(value)) %>%
+  ggplot(aes(fct_rev(prof), value))+geom_col()+coord_flip()+labs(x="",
+                                                                 y="2007-2017 average")
+```
+
+## Causas de muerte
+```{r deaths}
+deaths <- get_deaths()
+head(deaths)
+summary(deaths)
+
+ggplot(deaths, aes(value))+geom_histogram()+labs(title="Num of deaths per observation",
+                                                 x="Num of deaths in observation",
+                                                 y="Num of observations")
 
 # Aggregate all level 1 causes of death
 deaths %>%
@@ -106,9 +100,7 @@ deaths %>%
   group_by(cause) %>%
   summarise(deaths=mean(value, na.rm = TRUE)) %>%
   arrange(desc(deaths)) -> deaths_agg
-```
 
-```{r death_stand_plot}
 # Create "Other" category
 others_list <- as.character(deaths_agg$cause[8:nrow(deaths_agg)])
 
@@ -120,6 +112,66 @@ deaths_agg %>%
   mutate(cause, cause = fct_relevel(cause, 'Other')) -> deaths_agg_other
 
 # Show barplot
-ggplot(deaths_agg_other, aes(cause, deaths))+geom_col(fill=my_colors[1])+coord_flip()+
+ggplot(deaths_agg_other, aes(cause, deaths))+geom_col()+coord_flip()+
   labs(x="",y="Anual deaths per 100.000hab", title="Most common causes of death in Europe")
+
+rm(deaths)
+```
+
+## Duración del ingreso hospitalario
+```{r length_stay}
+length_stay <- get_length_stay()
+head(length_stay)
+summary(length_stay)
+
+length_stay %>%
+  group_by(age) %>%
+  filter(value < quantile(value, probs=0.97)) %>%
+  ggplot(aes(age, value))+geom_boxplot()
+
+rm(length_stay)
+```
+
+## Altas hospitalarias
+```{r hospital_discharges}
+hospital_discharges <- get_hospital_discharges()
+head(hospital_discharges)
+summary(hospital_discharges)
+
+ggplot(hospital_discharges, aes(value))+geom_histogram()+labs(title="Hospital discharges")
+hospital_discharges %>%
+  filter(value < quantile(value, prob=0.97)) %>%
+  ggplot(aes(value))+geom_histogram()+labs(title="Hospital discharges under quantile 0.97")
+
+# Aggregate all level 1 causes of death
+hospital_discharges %>%
+  filter(age == 'TOTAL', icd10_level == 1) %>%
+  select(c(icd10, value, cause, icd10_level)) %>%
+  group_by(cause) %>%
+  summarise(value=mean(value, na.rm = TRUE)) %>%
+  arrange(desc(value)) -> hospital_discharges_agg
+
+others_list <- as.character(hospital_discharges_agg$cause[8:nrow(hospital_discharges_agg)])
+
+hospital_discharges_agg %>%
+  mutate(cause = fct_collapse(cause, Other=others_list)) %>%
+  group_by(cause) %>%
+  summarise(value=sum(value)) %>%
+  mutate(cause, cause = fct_reorder(cause, value)) %>%
+  mutate(cause, cause = fct_relevel(cause, 'Other')) -> hospital_discharges_agg_other
+
+ggplot(hospital_discharges_agg_other, aes(cause, value))+geom_col()+coord_flip()+
+  labs(x="",y="Discharges", title="Most common causes of discharge in Europe")
+
+rm(hospital_discharges)
+```
+
+## Altas hospitalarias y duración del ingreso
+```{r discharge_say}
+discharge_stay <- get_discharge_stay()
+head(discharge_stay)
+summary(discharge_stay)
+
+# Geo values are only NUTS0
+levels(discharge_stay$geo)
 ```
