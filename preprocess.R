@@ -8,7 +8,10 @@ source_python('download_data.py', envir=NULL)
 source_python('transform_eurostat_data.py')
 
 # Code-label dictionaries --------------------
-# Spain regions
+# All NUTS regions
+nuts_dic <- fromJSON('data/nuts.json')
+
+# Spain NUTS2 regions
 spain_nuts <- fromJSON('data/spain_nuts2.json')
 
 # Professional categories
@@ -27,15 +30,15 @@ age_order <- c("Y_LT1", "Y1-4", "Y5-9", "Y10-14", "Y15-19", "Y20-24", "Y25-29",
                "Y90-94", "Y_LT15", "Y_LT25", "Y_GE65", "Y_GE85", "Y_GE90",
                "Y_GE95", "TOTAL", "UNK")
 
-# >> Dimensions ----------------------------------------------------------------
-# All health professionals --------------------
-# Import all professionals data
-# 
-# Get also all NaN data, so the aggregation only returns valid values
-# when there are measurements for every type of professionals in a specific
-# year and region.
+# Functions --------------------
 
 get_staff_all <- function() {
+  # Import all professionals data
+  # 
+  # Get also all NaN data, so the aggregation only returns valid values
+  # when there are measurements for every type of professionals in a specific
+  # year and region.
+  
   print("Loading staff_all...")
 
   staff_all <- transform_eurostat_data('data/staff_all.gz', na_rm=FALSE)
@@ -49,7 +52,6 @@ get_staff_all <- function() {
   return(staff_all)
 }
 
-# Hospital professionals -------------------------------------------------------
 get_staff_hosp <- function() {
   print("Loading staff_hosp....")
 
@@ -65,9 +67,6 @@ get_staff_hosp <- function() {
   return(staff_hosp)
 }
 
-
-# >> Facts ---------------------------------------------------------------------
-# Crude deaths -----------------------------------------------------------------
 get_deaths <- function() {
   print("Loading deaths...")
 
@@ -86,7 +85,6 @@ get_deaths <- function() {
   return(deaths)
 }
 
-# Hospital discharges ----------------------------------------------------------
 get_hospital_discharges <- function(sex=FALSE) {
   print("Loading hospital_discharges...")
   
@@ -118,7 +116,6 @@ get_hospital_discharges <- function(sex=FALSE) {
   return(hospital_discharges)
 }
 
-# Hospital discharges and length of stay ---------------------------------------
 get_discharge_stay <- function() {
   print("Loading discharge_stay...")
   discharge_stay <- transform_eurostat_data('data/hosp_discharges_and_length_of_stay.gz')
@@ -128,7 +125,6 @@ get_discharge_stay <- function() {
   return(discharge_stay)
 }
 
-# Length of stay ---------------------------
 get_length_stay <- function(sex=FALSE) {
   print("Loading length_stay...")
   
@@ -149,4 +145,32 @@ get_length_stay <- function(sex=FALSE) {
   length_stay$age <- ordered(length_stay$age, levels=age_order)
   
   return(length_stay)
+}
+
+reduce_data <- function(data, nuts=c('0'), years=NULL, icd10=c('1')) {
+  # Subset of dataset based on selected criteria
+  # Select nuts codes
+  if (!is.null(nuts)) {
+    selected_nuts <- list()
+    for (i in nuts) {
+      selected_nuts <- append(selected_nuts, names(nuts_dic[[i]]))
+    }
+    data <- filter(data, geo %in% selected_nuts)
+  }
+  
+  # Select years
+  if (!is.null(years)) {
+    selected_years <- years[1]:years[2]
+    data <- filter(data, year %in% selected_years)
+  }
+  
+  # Select icd10
+  if  (!is.null(icd10)) {
+    selected_icd10 <- list()
+    for (i in icd10) {
+      selected_icd10 <- append(selected_icd10, icd10_list$inverse_levels[[i]])
+    }
+    data <- filter(data, icd10 %in% selected_icd10)
+  }
+  return(data)
 }
