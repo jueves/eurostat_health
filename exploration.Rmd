@@ -1,7 +1,7 @@
 ---
 title: "Exploración de datos sanitarios de Eurostat"
 author: "Luis Cobiella Hernández"
-date: "7/12/2020"
+date: "9/12/2020"
 output: html_document
 ---
 
@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Preprocesado
-Descarga de datos y metados, preprocesado y carga.
+Descarga de datos y metados y carga de funciones de preprocesado.
 ```{r preprocess, results="hide", message=FALSE}
 source("preprocess.R")
 ```
