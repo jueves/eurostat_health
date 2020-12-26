@@ -2,7 +2,6 @@
 import pandas as pd
 import numpy as np
 import re
-from datetime import datetime
 
 def transform_eurostat_data(file_name, na_rm=True):
   '''
