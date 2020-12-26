@@ -8,6 +8,9 @@ This project aims to explore and analyse several Eurostat health datasets.
 * `preprocess.R` Preprocess each individual dataset assigning specific factor levels.
 * `exploration.R` Datasets exploration.
 * `exploration.Rmd` Same exploration as `exploration.R`, but as R markdown notebook.
+* `explore_icd10.py` Explore differences between various sources of ICD-10 codes.
+* `export_subdata.R` Exports different tables to disk as Rdata files, one file per table per country.
+* `per_country.Rmd` Explores data per country and models linear regressions for each one.
 
 ## Metadata files
 These files have been manually collected from several sources, so they are included in the repository.
@@ -18,3 +21,4 @@ These files have been manually collected from several sources, so they are inclu
 
 # To do
 * Simplify transform_eurostat_data() import method using `,|\t+` as separator.
+* Explore linear regression residuals.
