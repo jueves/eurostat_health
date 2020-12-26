@@ -36,7 +36,7 @@ staff_hosp_merge <- staff_hosp %>%
 
 staff <- bind_rows(staff_all_merge, staff_hosp_merge)
 
-length_stay <- get_length_stay(sex=TRUE) %>% reduce_data(icd10=NULL)
+length_stay <- get_length_stay(sex=TRUE) %>% reduce_data(icd10="0")
 
 length_stay_merge <- length_stay %>%
   select(-c(indic_he, unit, metadata)) %>%
