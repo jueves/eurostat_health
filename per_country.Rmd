@@ -1,0 +1,213 @@
+---
+title: "Untitled"
+author: "Luis Cobiella Hernández"
+date: "22/12/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Carga
+
+```{r load, echo=FALSE}
+source("preprocess.R")
+```
+
+## Evolución de la duración de los ingresos en los distintos países
+
+```{r plot_per_country}
+get_country_name <- function(country_code) {
+  # Takes a NUTS code and returns the country name
+  nuts0 <- str_extract(as.character(country_code), "[:alpha:][:alpha:]")
+  name <- nuts_dic[['0']][[nuts0]]
+  return(name)
+}
+
+load("data/length_stay_merged_icd10.Rdata")
+len_merged_icd10 %>%
+  filter(geo %in% names(nuts_dic$'0')) %>%
+  mutate(country = sapply(geo, get_country_name)) %>%
+  filter(sex == "T") %>%
+  filter(age == "TOTAL") %>%
+  select(country, year, value) %>%
+  ggplot(aes(year, value, color=country))+geom_line()+
+  labs(y='Average lengtg of stay', x='Year') -> p
+ggplotly(p)
+```
+
+## Distribución de las duraciones medias de los ingresos
+```{r, explore_distribution}
+len_stay <- as_tibble(len_merged_icd10)
+len_stay %>%
+  filter(age == "TOTAL") %>%
+  filter(sex != "T") %>%
+  mutate(country = sapply(geo, get_country_name)) %>%
+  mutate(sexo=fct_recode(sex, "Mujer" = "F", "Hombre" = "M")) %>%
+  select(country, sexo, value) -> data_vier
+data_vier %>%
+  ggplot(aes(country, value, fill=sexo)) +
+        labs(title="Distribución de la duración media de los ingresos hospitalarios",
+             subtitle="Las unidades que forman cada distribución son los distintos años\
+                       y regiones de cada país y sexo.",
+             x=NULL, y="Días") + geom_boxplot() + coord_flip() + scale_y_continuous(limits = c(0, 20))
+```
+
+## Transformación para regresión lineal
+```{r transform_staff}
+staff_all <- get_staff_all()
+staff_hosp <- get_staff_hosp()
+
+staff_all_merge <- staff_all %>%
+  filter(unit=="P_HTHAB") %>%
+  select(-c(unit, metadata, isco08)) %>%
+  pivot_wider(names_from=prof, values_from=value, names_prefix="all_")
+
+staff_hosp_merge <- staff_hosp %>%
+  select(-c(metadata, isco08)) %>%
+  pivot_wider(names_from=prof, values_from=value, names_prefix="hosp_")
+
+staff <- bind_rows(staff_all_merge, staff_hosp_merge)
+names(staff) <- str_replace_all(names(staff), " ", "_")
+```
+
+## Funciones de transformación de los datos
+
+```{r merge_subdata_fun}
+transform_premerge <- function(country_code, path) {
+  file_name <- paste0(path, country_code, ".Rdata")
+  load(file_name)
+  
+  country_data %>%
+    filter(icd10 %in% icd10_list$inverse_levels[['0']]) %>%
+    mutate(females=(sex=="F" | sex=="T")) %>%
+    mutate(males= (sex=="M" | sex=="T")) %>%
+    select(age, females, males, geo, year, value) %>%
+    mutate(age = fct_recode(age, !!!age_num)) %>%
+    mutate(age = as.numeric(as.character(age))) -> data
+  return(data)
+}
+
+
+merge_subdata <- function(country_code) {
+  # Cuando esto funcione se quita la variable path y se hace
+  # automático con los tres directorios
+  
+  # Length_stay
+  transform_premerge(country_code, "data/length_stay_subdata/") %>%
+    rename(len_stay = value) -> len_data
+  
+  transform_premerge(country_code, "data/deaths_subdata/") %>%
+    rename(mortality = value) -> deaths_data
+  
+  transform_premerge(country_code, "data/discharges_subdata/") %>%
+    rename(discharges = value) -> discharges_data
+  
+  staff %>%
+    filter(str_detect(geo, paste0("^", country_code))) -> country_staff
+  
+  full_join(len_data, deaths_data) %>%
+    full_join(discharges_data) %>%
+    left_join(staff) -> data
+
+  return(data)
+}
+
+drop_na_cols <- function(data, threshold=0.5) {
+  # Returns the dataset excluding those columns with a rate
+  # of NaN above the threshold.
+  
+  na_rates <- vector("list", ncol(data))
+  names(na_rates) <- names(data)
+  
+  for (atribute in names(na_rates)) {
+   na_rates[atribute] <- sum(is.na(data[atribute]))/(nrow(data)+0.01)
+  }
+   
+  remaining_cols <- names(na_rates)[na_rates < threshold]
+  data <- select(data, !!!remaining_cols)
+  return(data)
+}
+```
+
+
+
+## Crear modelos
+
+```{r extract_models, message=FALSE}
+lm_models <- vector("list", length(country_codes))
+names(lm_models) <- country_codes
+min_rows <- 100
+
+for (country in country_codes) {
+  merge_subdata(country) %>%
+    select(-geo) %>%
+    drop_na_cols() %>%
+    drop_na() %>%
+    scale() %>%
+    as.data.frame() -> subdata
+  
+  if ((nrow(subdata) > min_rows) && ("len_stay" %in% names(subdata))) {
+    lm_models[[country]] <- lm(len_stay ~ ., data=subdata, na.action=na.omit)
+  }
+}
+```
+
+## Distribución de los valores de coeficientes por países
+
+```{r coef_distrib}
+# Convert lm_models to matrix
+models_matrix <- matrix(nrow=37, ncol=21)
+col_names <- c("Estado")
+models_matrix[, 1] <- names(lm_models)
+
+for (i in 1:nrow(models_matrix)) {
+  coef_list <- lm_models[[i]]$coefficients
+  for (coef_name in names(coef_list)) {
+    if (coef_name %in% col_names) {
+      col_index <- match(coef_name, col_names)
+    } else {
+      col_names <- append(col_names, coef_name)
+      col_index <- length(col_names)
+    }
+    models_matrix[i, col_index] <- coef_list[[coef_name]]
+  }
+}
+
+models_df <- as.data.frame(models_matrix[,1:length(col_names)])
+names(models_df) <- col_names
+
+models_df %>%
+  pivot_longer(!Estado, names_to="name", values_to="value", values_drop_na=TRUE) %>%
+  mutate(value = as.numeric(as.character(value))) %>%
+  ggplot(aes(name, value)) + geom_boxplot() + coord_flip() +
+        labs(title="Distribución del peso de cada variable sobre la duración media del ingreso",
+             x=NULL, y="Peso")
+```
+
+\pagebreak
+
+# Listado de modelos lineales
+A continuación se listan los coeficientes para los distintos modelos lineales desarrollados para estimar la duración media de los ingresos hospitalarios.
+
+```{r print_models, results="asis"}
+for (i in 1:length(lm_models)) {
+  country_name <- get_country_name(names(lm_models)[i])
+  cat("## Modelo para ", country_name, "\n\n")
+
+  if (is.null(lm_models[[i]])) {
+    cat("No se han encontrado suficientes datos para desarrollar un modelo para ",
+        country_name, ".\n", sep="")
+  } else {
+    coef_list <- lm_models[[i]]$coefficients
+    cat("| Variable | Coeficiente | \n|-------|--------| \n")
+    for (j in 1:length(coef_list)) {
+      cat("| ", names(coef_list)[j], " | ", coef_list[[j]], " | \n")
+    }
+  }
+  cat("\n\n\n")
+}
+```
