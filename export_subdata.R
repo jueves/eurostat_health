@@ -18,6 +18,10 @@ print("Importado")
 export_countries(length_stay, "data/length_stay_subdata")
 print(date())
 
+
+len_merged_icd10 <- filter(length_stay, icd10 %in% icd10_list$inverse_levels[['0']])
+save(len_merged_icd10, file="data/length_stay_merged_icd10.Rdata")
+
 print(date())
 deaths <- get_deaths()
 print("Importado")
