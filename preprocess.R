@@ -10,6 +10,7 @@ source_python('transform_eurostat_data.py')
 # Code-label dictionaries --------------------
 # All NUTS regions
 nuts_dic <- fromJSON('data/nuts.json')
+country_codes <- names(nuts_dic[["0"]])
 
 # Spain NUTS2 regions
 spain_nuts <- fromJSON('data/spain_nuts2.json')
@@ -29,6 +30,20 @@ age_order <- c("Y_LT1", "Y1-4", "Y5-9", "Y10-14", "Y15-19", "Y20-24", "Y25-29",
                "Y60-64", "Y65-69", "Y70-74", "Y75-79", "Y80-84", "Y85-89",
                "Y90-94", "Y_LT15", "Y_LT25", "Y_GE65", "Y_GE85", "Y_GE90",
                "Y_GE95", "TOTAL", "UNK")
+
+# Create list of numbers for each age label
+age_num <- age_order
+names(age_num)[1] <- 0.5
+
+for (i in 2:length(age_order)) {
+  if (str_detect(age_order[i], "-")){
+    numbers <- str_extract_all(age_order[i], "[:digit:]+")
+    value <- mean(as.numeric(numbers[[1]]))
+  } else {
+    value <- "NaN"
+  }
+  names(age_num)[i] <- value
+}
 
 # Functions --------------------
 
@@ -85,7 +100,10 @@ get_deaths <- function() {
   return(deaths)
 }
 
-get_hospital_discharges <- function(sex=FALSE) {
+get_hospital_discharges <- function(sex="total") {
+  # sex values can be any of the sex labels: "total", "female" or "male"
+  # or "all" to return all labels.
+  
   print("Loading hospital_discharges...")
   
   files_names <- c("data/hosp_discharges_t.gz", "data/hosp_discharges_f.gz",
@@ -94,14 +112,15 @@ get_hospital_discharges <- function(sex=FALSE) {
   factor_cols <- c( "age", "indic_he", "unit", "sex", "icd10", "geo")
   
   
-  if (sex) {
+  if (sex=="all") {
     datasets_list <- lapply(files_names, transform_eurostat_data)
     hospital_discharges <- bind_rows(datasets_list)
   } else {
-    hospital_discharges <- transform_eurostat_data(files_names[1])
+    index_list <- c(total=1, female=2, male=3)
+    i <- index_list[[sex]]
+    hospital_discharges <- transform_eurostat_data(files_names[i])
   }
-  
-  
+
   hospital_discharges[,factor_cols] <- lapply(hospital_discharges[,factor_cols], factor)
   
   hospital_discharges$age <- ordered(hospital_discharges$age, levels=age_order)
@@ -125,7 +144,9 @@ get_discharge_stay <- function() {
   return(discharge_stay)
 }
 
-get_length_stay <- function(sex=FALSE) {
+get_length_stay <- function(sex="total") {
+  # sex values can be any of the sex labels: "total", "female" or "male"
+  # or "all" to return all labels.
   print("Loading length_stay...")
   
   files_names <- c('data/length_of_stay_t.gz', 'data/length_of_stay_f.gz',
@@ -133,12 +154,13 @@ get_length_stay <- function(sex=FALSE) {
   
   factor_cols <- c( "age", "indic_he", "unit", "sex", "icd10", "geo")
   
-  
-  if (sex) {
+  if (sex=="all") {
     datasets_list <- lapply(files_names, transform_eurostat_data)
     length_stay <- bind_rows(datasets_list)
   } else {
-    length_stay <- transform_eurostat_data(files_names[1])
+    index_list <- c(total=1, female=2, male=3)
+    i <- index_list[[sex]]
+    length_stay <- transform_eurostat_data(files_names[i])
   }
   
   length_stay[,factor_cols] <- lapply(length_stay[,factor_cols], factor)
