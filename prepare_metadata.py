@@ -38,6 +38,7 @@ else:
 
 nuts_url = 'https://ec.europa.eu/eurostat/documents/345175/629341/NUTS2021.xlsx'
 nuts_file_name = 'data/nuts.json'
+nuts_esp_url = 'https://gist.github.com/brenes/1095110/raw/c8f208b03485ba28f97c500ab7271e8bce43b9c6/paises.csv'
 
 if os.path.isfile(nuts_file_name):
   print(nuts_file_name, 'is already downloaded.')
@@ -51,7 +52,17 @@ else:
       code = row['Code 2021']
       name = row[1+level]
       dic_nuts[level][code] = name
-
+  
+  # Add Spanish names
+  nuts_esp = pd.read_csv(nuts_esp_url)
+  for index, row in nuts_esp.iterrows():
+    if (row[" iso2"] in dic_nuts[0].keys()):
+      dic_nuts[0][row[" iso2"]] = row.nombre
+  
+  # Fix mistakes
+  dic_nuts[0]['UK'] = "Reino Unido"
+  dic_nuts[0]['MK'] = "Macedonia" 
+  dic_nuts[0]['EL'] = "Grecia"
   
   # Export dictionary to json
   with open(nuts_file_name, 'w') as f:
