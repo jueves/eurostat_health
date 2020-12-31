@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Carga
 
-```{r load, echo=FALSE}
+```{r load, message=FALSE}
 source("preprocess.R")
 ```
 
@@ -161,7 +161,7 @@ for (country in country_codes) {
 ```{r coef_distrib}
 # Convert lm_models to matrix
 models_matrix <- matrix(nrow=37, ncol=21)
-col_names <- c("Estado")
+col_names <- c("country")
 models_matrix[, 1] <- names(lm_models)
 
 for (i in 1:nrow(models_matrix)) {
@@ -179,13 +179,78 @@ for (i in 1:nrow(models_matrix)) {
 
 models_df <- as.data.frame(models_matrix[,1:length(col_names)])
 names(models_df) <- col_names
+models_df %>%
+  mutate(country = sapply(country, get_country_name)) %>%
+  mutate_at(names(models_df[2:ncol(models_df)]),
+            (function (x) as.numeric(as.character(x)))) -> models_df
 
 models_df %>%
-  pivot_longer(!Estado, names_to="name", values_to="value", values_drop_na=TRUE) %>%
+  pivot_longer(!country, names_to="name", values_to="value", values_drop_na=TRUE) %>%
   mutate(value = as.numeric(as.character(value))) %>%
   ggplot(aes(name, value)) + geom_boxplot() + coord_flip() +
         labs(title="Distribución del peso de cada variable sobre la duración media del ingreso",
              x=NULL, y="Peso")
+```
+
+## Outliers
+### Edad
+```{r outliers_age}
+models_df %>%
+  arrange(age) %>%
+  select(country, age) %>%
+  drop_na()
+```
+
+### Año
+```{r, outliers_year}
+models_df %>%
+  arrange(year) %>%
+  select(country, year) %>%
+  drop_na()
+```
+
+### Sexo
+```{r, outliers_sex}
+models_df %>%
+  select(country, females, males) %>%
+  filter(females > males) %>%
+  arrange(desc(females))
+```
+
+### Mortalidad
+```{r, outliers_deaths}
+models_df %>%
+  select(country, mortality) %>%
+  arrange(mortality) %>%
+  drop_na()
+```
+
+### Edad vs cualquier otra variable
+```{r, age_vs_all}
+models_df %>%
+  filter(abs(age) < abs(females) | abs(age) < abs(males) | abs(age) < abs(year)
+         | abs(age) < abs(discharges) | abs(age) < abs(all_Physicians)
+         | abs(age) < abs(all_Nursing_professionals_and_midwives) | abs(age) < abs(all_Dentists)
+         | abs(age) < abs(all_Pharmacists) | abs(age) < abs(all_Physiotherapists)
+         | abs(age) < abs(mortality))
+```
+
+### ¿Por qué pesa tan poco la edad en Noruega y Finlandia?
+Exploramos si existen suficientes datos para cada grupo de edad.
+```{r, no_fi}
+print("Finland's amount of data per age:")
+merge_subdata("FI") %>%
+  drop_na_cols() %>%
+  drop_na() %>%
+  select(age) %>%
+  table()
+
+print("Norway's amount of data per age:")
+merge_subdata("NO") %>%
+  drop_na_cols() %>%
+  drop_na() %>%
+  select(age) %>%
+  table()
 ```
 
 \pagebreak
