@@ -47,8 +47,7 @@ len_stay %>%
   filter(sex != "T") %>%
   mutate(country = sapply(geo, get_country_name)) %>%
   mutate(sexo=fct_recode(sex, "Mujer" = "F", "Hombre" = "M")) %>%
-  select(country, sexo, value) -> data_vier
-data_vier %>%
+  select(country, sexo, value) %>%
   ggplot(aes(country, value, fill=sexo)) +
         labs(title="Distribución de la duración media de los ingresos hospitalarios",
              subtitle="Las unidades que forman cada distribución son los distintos años\
@@ -188,7 +187,7 @@ models_df %>%
   pivot_longer(!country, names_to="name", values_to="value", values_drop_na=TRUE) %>%
   mutate(value = as.numeric(as.character(value))) %>%
   ggplot(aes(name, value)) + geom_boxplot() + coord_flip() +
-        labs(title="Distribución del peso de cada variable sobre la duración media del ingreso",
+        labs(title="Distribución del peso de cada variable sobre la\n duración media del ingreso",
              x=NULL, y="Peso")
 ```
 

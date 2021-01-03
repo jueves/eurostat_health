@@ -21,12 +21,15 @@ print(date())
 
 len_merged_icd10 <- filter(length_stay, icd10 %in% icd10_list$inverse_levels[['0']])
 save(len_merged_icd10, file="data/length_stay_merged_icd10.Rdata")
+rm(len_stay)
+rm(len_merged_icd10)
 
 print(date())
 deaths <- get_deaths()
 print("Importado")
 export_countries(deaths, "data/deaths_subdata")
 print(date())
+rm(deaths)
 
 print(date())
 discharges <- get_hospital_discharges(sex="all")
