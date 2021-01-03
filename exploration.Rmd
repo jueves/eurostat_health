@@ -21,11 +21,22 @@ source("preprocess.R")
 staff_all <- get_staff_all()
 head(staff_all)
 summary(staff_all)
+quantile(staff_all$value, probs=c(0,0.25,0.5,0.75,0.9,0.97,0.99,1), na.rm=TRUE)
 
-ggplot(staff_all, aes(value))+geom_histogram()+labs(title="Num of professionals, all values")
+
 staff_all %>%
-  filter(value > 10000) %>%
-  ggplot(aes(value))+geom_histogram()+labs(title="Num of professionals, only values over 10.000")
+  filter(value < quantile(value, prob=0.97, na.rm=TRUE)) %>%
+  ggplot(aes(value))+geom_histogram()+labs(title="Nº de profesionales. Sólo valores bajo el percentil 97")
+
+staff_all %>%
+  filter(unit=="P_HTHAB") %>%
+  filter(between(year, 2007, 2017)) %>%
+  group_by(prof, year) %>%
+  summarise(value=sum(value, na.rm=TRUE)) %>%
+  group_by(prof) %>%
+  summarise(value=mean(value, na.rm=TRUE)) %>%
+  ggplot(aes(fct_rev(prof), value))+geom_col()+coord_flip()+labs(x="",
+                                                                 y="Medias entre 2007-2017")
 
 # Filter Spanish data
 spain_staff <- filter(staff_all, geo %in% names(spain_nuts))
@@ -45,6 +56,17 @@ p <- ggplot(spain_staff_region, aes(year, value, color=region))+geom_line()+
   labs(y='Professionals per 100.000hab', x='Year')+coord_cartesian(xlim=c(2005, 2016))
 ggplotly(p)
 
+# New plot Spain
+spain_staff %>%
+  filter(unit == 'P_HTHAB') %>%
+  select(region, prof, value) %>%
+  drop_na() %>%
+  group_by(region, prof) %>%
+  summarise(value=mean(value, na.rm=TRUE))%>%
+  ggplot(aes(region, value, fill=prof)) + geom_bar(stat="identity")+coord_flip()+
+        labs(x="", y="Nº de profesionales por cada 100.000hab")
+
+
 # Aggregate by type of professional, Spain totals.
 spain_staff %>%
   filter(unit == 'P_HTHAB') %>% select(c(year, prof, value)) %>%
@@ -52,15 +74,15 @@ spain_staff %>%
 
 # Plot professionals per category
 p <- ggplot(spain_staff_prof, aes(year, value, color=prof))+geom_line()+
-  labs(y='Professionals per 100.000hab', x='Year')
+    labs(y='Professionales por cada 100.000hab', x='Año')
 ggplotly(p)
 
 # Aggregate by type of professionals, Europe totals.
-staff_regions <- filter(staff_all, unit == 'P_HTHAB', geo != 'EU28', year>2008)
-
-ggplot(staff_regions, aes(prof, value))+geom_boxplot()+
-  labs(title="Health professionals in european regions from 2009 to 2019",
-       x="", y="Profesionals per 100.000 hab")
+staff_all %>%
+  filter(unit == 'P_HTHAB', geo != 'EU28', year>2008) %>%
+  ggplot(aes(prof, value))+geom_boxplot()+
+  labs(title="Profesionales sanitarios en regiones europeas entre 2009 y 2019",
+       x="", y="Profesionales por cada 100.000 hab")
 
 ```
 
@@ -69,6 +91,12 @@ ggplot(staff_regions, aes(prof, value))+geom_boxplot()+
 staff_hosp <- get_staff_hosp()
 head(staff_hosp)
 summary(staff_hosp)
+quantile(staff_hosp$value, probs=c(0,0.25,0.5,0.75,0.9,0.97,0.99,1), na.rm=TRUE)
+
+staff_hosp %>%
+  filter(value < quantile(value, prob=0.97, na.rm=TRUE)) %>%
+  ggplot(aes(value))+geom_histogram()+labs(title="Nº de profesionales. Sólo valores bajo el percentil 97")
+
 
 # Geo values are only NUTS0
 levels(staff_hosp$geo)
@@ -80,18 +108,33 @@ staff_hosp %>%
   group_by(prof) %>%
   summarise(value=mean(value)) %>%
   ggplot(aes(fct_rev(prof), value))+geom_col()+coord_flip()+labs(x="",
-                                                                 y="2007-2017 average")
+                                                                 y="Medias entre 2007 y 2017")
 ```
 
 ## Causas de muerte
+```{r, rename_icd10}
+icd10_es <- c(Other="Otros",
+              Neoplasms="Neoplasias",
+              "Mental and behavioural disorders (F00-F99)"="Desórdenes mentales y del comportamiento",
+              "Diseases of the nervous system and the sense organs (G00-H95)"="Enfermedades del sistema nervioso y órganos de los sentidos",
+              "Diseases of the circulatory system (I00-I99)"="Enfermedades del sistema circulatorio",
+              "Diseases of the respiratory system (J00-J99)"="Enfermedades del sistema respiratorio",
+              "Diseases of the digestive system (K00-K93)"="Enfermedades del sistema digestivo",
+              "External causes of morbidity and mortality (V01-Y89)"="Causas externas de morbilidad y mortalidad",
+              "Diseases of the musculoskeletal system and connective tissue (M00-M99)"="Enfermedades del sistema musculoesquelético y los tejidos conectivos",
+              "Diseases of the genitourinary system (N00-N99)"="Enfermedades del aparato genitourinario",
+              "Pregnancy, childbirth and the puerperium (O00-O99)"="Embarazo, parto y puerperio")
+```
+
 ```{r deaths}
 deaths <- get_deaths()
 head(deaths)
 summary(deaths)
+quantile(deaths$value, probs=c(0,0.25,0.5,0.75,0.9,0.97,0.99,1), na.rm=TRUE)
 
-ggplot(deaths, aes(value))+geom_histogram()+labs(title="Num of deaths per observation",
-                                                 x="Num of deaths in observation",
-                                                 y="Num of observations")
+deaths %>%
+  filter(value < quantile(value, prob=0.97, na.rm=TRUE)) %>%
+  ggplot(aes(value))+geom_histogram()+labs(title="Número de muertes bajo el percentil 97")
 
 # Aggregate all level 1 causes of death
 deaths %>%
@@ -109,11 +152,10 @@ deaths_agg %>%
   group_by(cause) %>%
   summarise(deaths=sum(deaths)) %>%
   mutate(cause, cause = fct_reorder(cause, deaths)) %>%
-  mutate(cause, cause = fct_relevel(cause, 'Other')) -> deaths_agg_other
-
-# Show barplot
-ggplot(deaths_agg_other, aes(cause, deaths))+geom_col()+coord_flip()+
-  labs(x="",y="Anual deaths per 100.000hab", title="Most common causes of death in Europe")
+  mutate(cause, cause = fct_relevel(cause, 'Other')) %>%
+  mutate(cause, cause = recode_factor(cause, !!!unlist(icd10_es))) %>%
+  ggplot(aes(cause, deaths))+geom_col()+coord_flip()+
+  labs(x="",y="Muertes anuales por cada 100.000hab", title="Principales causas de muerte en Europa")
 
 rm(deaths)
 ```
@@ -127,7 +169,7 @@ summary(length_stay)
 length_stay %>%
   group_by(age) %>%
   filter(value < quantile(value, probs=0.97)) %>%
-  ggplot(aes(age, value))+geom_boxplot()
+  ggplot(aes(age, value))+geom_boxplot()+coord_flip()
 
 rm(length_stay)
 ```
@@ -137,11 +179,12 @@ rm(length_stay)
 hospital_discharges <- get_hospital_discharges()
 head(hospital_discharges)
 summary(hospital_discharges)
+quantile(hospital_discharges$value, probs=c(0,0.25,0.5,0.75,0.9,0.97,0.99,1), na.rm=TRUE)
 
 ggplot(hospital_discharges, aes(value))+geom_histogram()+labs(title="Hospital discharges")
 hospital_discharges %>%
-  filter(value < quantile(value, prob=0.97)) %>%
-  ggplot(aes(value))+geom_histogram()+labs(title="Hospital discharges under quantile 0.97")
+  filter(value < quantile(value, prob=0.97, na.rm=TRUE)) %>%
+  ggplot(aes(value))+geom_histogram()+labs(title="Nº de altas hospitalarias. Sólo valores bajo el percentil 97")
 
 # Aggregate all level 1 causes of death
 hospital_discharges %>%
@@ -158,10 +201,10 @@ hospital_discharges_agg %>%
   group_by(cause) %>%
   summarise(value=sum(value)) %>%
   mutate(cause, cause = fct_reorder(cause, value)) %>%
-  mutate(cause, cause = fct_relevel(cause, 'Other')) -> hospital_discharges_agg_other
-
-ggplot(hospital_discharges_agg_other, aes(cause, value))+geom_col()+coord_flip()+
-  labs(x="",y="Discharges", title="Most common causes of discharge in Europe")
+  mutate(cause, cause = fct_relevel(cause, 'Other')) %>%
+  mutate(cause, cause = recode_factor(cause, !!!unlist(icd10_es))) %>%
+  ggplot(aes(cause, value))+geom_col()+coord_flip()+
+          labs(x="",y="Diagnósticos al alta", title="Prinpales diagnósticos al alta en Europa")
 
 rm(hospital_discharges)
 ```

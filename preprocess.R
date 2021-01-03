@@ -18,7 +18,7 @@ spain_nuts <- fromJSON('data/spain_nuts2.json')
 # Professional categories
 isco08 <- fromJSON('data/health_professionals_metadata.json')
 for (i in 1:length(names(isco08))) {
-  isco08[[i]] <- isco08[[i]][[1]]
+  isco08[[i]] <- isco08[[i]][[2]] # Change to isco08[[i]][[1]] to get English names
 }
 
 # Health problems
