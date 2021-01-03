@@ -11,6 +11,7 @@ This project aims to explore and analyse several Eurostat health datasets.
 * `explore_icd10.py` Explore differences between various sources of ICD-10 codes.
 * `export_subdata.R` Exports different tables to disk as Rdata files, one file per table per country.
 * `per_country.Rmd` Explores data per country and models linear regressions for each one.
+* `latex_tables.R` Outputs coeficient tables in Latex.
 
 ## Metadata files
 These files have been manually collected from several sources, so they are included in the repository.
