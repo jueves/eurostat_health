@@ -34,6 +34,8 @@ len_merged_icd10 %>%
   filter(sex == "T") %>%
   filter(age == "TOTAL") %>%
   select(country, year, value) %>%
+  group_by(country, year) %>%
+  summarise(value=mean(value)) %>%
   ggplot(aes(year, value, color=country))+geom_line()+
   labs(y='Average lengtg of stay', x='Year') -> p
 ggplotly(p)
