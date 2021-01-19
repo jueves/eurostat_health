@@ -22,4 +22,3 @@ These files have been manually collected from several sources, so they are inclu
 
 # To do
 * Simplify transform_eurostat_data() import method using `,|\t+` as separator.
-* Explore linear regression residuals.
