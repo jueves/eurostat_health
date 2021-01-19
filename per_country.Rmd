@@ -230,9 +230,9 @@ models_df %>%
 ```{r, age_vs_all}
 models_df %>%
   filter(abs(age) < abs(females) | abs(age) < abs(males) | abs(age) < abs(year)
-         | abs(age) < abs(discharges) | abs(age) < abs(all_Physicians)
-         | abs(age) < abs(all_Nursing_professionals_and_midwives) | abs(age) < abs(all_Dentists)
-         | abs(age) < abs(all_Pharmacists) | abs(age) < abs(all_Physiotherapists)
+         | abs(age) < abs(discharges) | abs(age) < abs(all_Médicos)
+         | abs(age) < abs(all_Enfermeras_y_matronas) | abs(age) < abs(all_Dentistas)
+         | abs(age) < abs(all_Farmacéuticos) | abs(age) < abs(all_Fisioterapeutas)
          | abs(age) < abs(mortality))
 ```
 
@@ -273,6 +273,7 @@ for (i in 1:length(lm_models)) {
     for (j in 1:length(coef_list)) {
       cat("| ", names(coef_list)[j], " | ", coef_list[[j]], " | \n")
     }
+    cat("| R² |", summary(lm_models[[i]])$r.squared, "|\n")
   }
   cat("\n\n\n")
 }
