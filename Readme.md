@@ -1,6 +1,6 @@
 # European health quality analysis
 This project aims to explore and analyse several Eurostat health datasets.  
-A general overview can be found in [this notebook](https://luis.cobiella.es/per_country_explained.html), generated from `per_country.Rmd` .
+A general overview can be found in [this notebook](https://luis.cobiella.es/per_country_explained.html), which is an extended version of `per_country.Rmd` .
 
 ## Code files
 * `prepare_metadata.py` Downloads, process and stores metadata.
