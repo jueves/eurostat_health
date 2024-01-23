@@ -1,7 +1,16 @@
 # European health quality analysis
-This project aims to explore and analyse several Eurostat health datasets.  
-A general overview can be found in [this notebook](https://luis.cobiella.es/per_country_explained.html), which is an extended version of `per_country.Rmd` .
+This project aims to explore and analyse several Eurostat health datasets. It is the coding part of a final thesis on European Healthcare for the Data Science Master Degree at Universitat Oberta de Catalunya.
 
+## Findings about lenght of stay per country
+![boxplot per country](cajas_len_stay.png)
+
+## Coeficients for the correlation model
+![coficients box plot](coef_boxes.png)
+
+## Notebook
+A more detailed overview can be found in [this notebook](https://data.cobiella.es/eurostat_health.html), which is an extended version of `per_country.Rmd`
+
+# Files
 ## Code files
 * `prepare_metadata.py` Downloads, process and stores metadata.
 * `download_data.py` Downloads datasets from Eurostat.
