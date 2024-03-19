@@ -5,7 +5,7 @@ This project aims to explore and analyse several Eurostat health datasets. It is
 Data gets downloaded from Eurostat and is labeled and grouped by merging multiple sources, including NUTS geographic information, various versions of ICD-10 diagnostics and ISCO-08 professional groups classification.
 
 ## Findings about lenght of stay per country
-Eurostat datasets are aggregated with a minimum granularity of region for location and year for time. Therefore, each data point represents the Average Lenght Of Stay (ALOS) for a specific sex, year and region in a certain country.
+Eurostat datasets are aggregated with a minimum granularity of region for location and year for time. Therefore, each data point represents the Average Length Of Stay (ALOS) for a specific sex, year and region in a certain country.
 ![boxplot per country](cajas_len_stay.png)
 
 ## Coeficients for the correlation model
@@ -26,11 +26,11 @@ A more detailed overview can be found in [this notebook](https://data.cobiella.e
 * `explore_icd10.py` Explore differences between various sources of ICD-10 codes.
 * `export_subdata.R` Exports different tables to disk as Rdata files, one file per table per country.
 * `per_country.Rmd` Explores data per country and models linear regressions for each one.
-* `latex_tables.R` Outputs coeficient tables in Latex.
+* `latex_tables.R` Outputs coefficient tables in Latex.
 
 ## Metadata files
 These files have been manually collected from several sources, so they are included in the repository.
 * `data/datasets_metadata.json` Includes short name, description and file url for each dataset. [Source](https://ec.europa.eu/eurostat/web/health/data/database)
 * `data/health_professionals_metadata.json` Includes ID, name and description for each professional category. Sources:  [Explanatory texts](https://ec.europa.eu/eurostat/cache/metadata/en/hlth_res_esms.htm) [Data browser 1](https://ec.europa.eu/eurostat/databrowser/view/hlth_rs_prshp1/default/table?lang=en) [Data browser 2](https://ec.europa.eu/eurostat/databrowser/view/hlth_rs_prsrg/default/table?lang=en)
-* `data/tags.json` Eurostat standard flags. These apear sometimes next to numerical values to indicate additional metadata about the observation. [Source](https://ec.europa.eu/eurostat/statistics-explained/index.php/Tutorial:Symbols_and_abbreviations)
+* `data/tags.json` Eurostat standard flags. These appear sometimes next to numerical values to indicate additional metadata about the observation. [Source](https://ec.europa.eu/eurostat/statistics-explained/index.php/Tutorial:Symbols_and_abbreviations)
 * `data/COD_2012_edited.csv` Manually edited version of the [2012 Eurostat shortlist for ICD-10](https://ec.europa.eu/eurostat/ramon/nomenclatures/index.cfm?TargetUrl=LST_CLS_DLD&StrNom=COD_2012&StrLanguageCode=EN&StrLayoutCode=) (International Code for Diseases and Health Problems). The datasets use the [2007 version](http://dd.eionet.europa.eu/vocabulary/eurostat/icd10/), but only the 2012 file includes levels to aggregate codes.
