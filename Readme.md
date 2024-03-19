@@ -1,10 +1,15 @@
 # European health quality analysis
 This project aims to explore and analyse several Eurostat health datasets. It is the coding part of a final thesis on European Healthcare for the Data Science Master Degree at Universitat Oberta de Catalunya.
 
+## Preprocessing
+Data gets downloaded from Eurostat and is labeled and grouped by merging multiple sources, including NUTS geographic information, various versions of ICD-10 diagnostics and ISCO-08 professional groups classification.
+
 ## Findings about lenght of stay per country
+Eurostat datasets are aggregated with a minimum granularity of region for location and year for time. Therefore, each data point represents the Average Lenght Of Stay (ALOS) for a specific sex, year and region in a certain country.
 ![boxplot per country](cajas_len_stay.png)
 
 ## Coeficients for the correlation model
+Data granularity is the same as in the previous plot.
 ![coficients box plot](coef_boxes.png)
 
 ## Notebook
