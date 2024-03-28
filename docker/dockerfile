@@ -1,7 +1,11 @@
 FROM ghcr.io/rocker-org/tidyverse:4.3.1
 
-RUN apt-get update && apt-get install -y  --no-install-recommends python3-pip python3-venv
+RUN git clone https://github.com/jueves/eurostat_health.git
 
-RUN pip3 install requests pandas numpy
+RUN mv /eurostat_health /home/rstudio
 
-RUN R -q -e 'install.packages(c("reticulate", "plotly"))'
+RUN chown rstudio:rstudio -R /home/rstudio/eurostat_health
+
+#COPY install_packages.R /home/rstudio/
+
+#RUN Rscript /home/rstudio/install_packages.R

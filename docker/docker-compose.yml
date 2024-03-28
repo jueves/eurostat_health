@@ -1,11 +1,10 @@
-version: "3"
 services:
   app:
     build: .
     environment:
       PASSWORD: ${RSTUDIO_PASSWORD}
     volumes:
-      - ./projects:/home/rstudio/projects
+      - /home/luis/rstudio/docker_src:/home/rstudio/code
     ports:
       - "8888:8787"
 
