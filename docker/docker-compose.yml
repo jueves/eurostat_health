@@ -1,0 +1,11 @@
+version: "3"
+services:
+  app:
+    build: .
+    environment:
+      PASSWORD: ${RSTUDIO_PASSWORD}
+    volumes:
+      - ./projects:/home/rstudio/projects
+    ports:
+      - "8888:8787"
+
