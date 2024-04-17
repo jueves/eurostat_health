@@ -1,4 +1,4 @@
-FROM ghcr.io/rocker-org/tidyverse:4.3.1
+FROM ghcr.io/rocker-org/ml:latest
 
 RUN git clone https://github.com/jueves/eurostat_health.git
 
@@ -6,6 +6,6 @@ RUN mv /eurostat_health /home/rstudio
 
 RUN chown rstudio:rstudio -R /home/rstudio/eurostat_health
 
-#COPY install_packages.R /home/rstudio/
+COPY docker_src/install_packages.R /home/rstudio/
 
-#RUN Rscript /home/rstudio/install_packages.R
+RUN Rscript /home/rstudio/install_packages.R
