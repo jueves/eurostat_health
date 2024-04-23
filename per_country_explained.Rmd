@@ -99,7 +99,7 @@ ggplotly(p)
 
 Ya que la media ignora la dispersión de los datos, volvemos a representar las ALOS en forma de diagrama de cajas, agrupando esta vez por país y por sexo.
 
-```{r, explore_distribution, fig.height=10}
+```{r, explore_distribution, fig.height=8}
 # Create labels dictionary
 dictionaries <- list(esp = list(title = "Distribución de la duración media de los ingresos hospitalarios",
                                 subtitle = "Las unidades que forman cada distribución son los distintos años\
