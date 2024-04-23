@@ -25,6 +25,49 @@ source("preprocess.R")
 
 El script `preprocess.R` se encarga de la descargar y fusionar las diferentes tablas de datos y metadatos desde distintas fuentes, homogeneizando los formatos.
 
+## Crear una lista para convertir códigos ISO a inglés
+```{r iso_to_english}
+iso_to_english <- list(
+  BE = "Belgium",
+  BG = "Bulgaria",
+  CZ = "Czech Republic",
+  DK = "Denmark",
+  DE = "Germany",
+  EE = "Estonia",
+  IE = "Ireland",
+  EL = "Greece",
+  ES = "Spain",
+  FR = "France",
+  HR = "Croatia",
+  IT = "Italy",
+  CY = "Cyprus",
+  LV = "Latvia",
+  LT = "Lithuania",
+  LU = "Luxembourg",
+  HU = "Hungary",
+  MT = "Malta",
+  NL = "Netherlands",
+  AT = "Austria",
+  PL = "Poland",
+  PT = "Portugal",
+  RO = "Romania",
+  SI = "Slovenia",
+  SK = "Slovakia",
+  FI = "Finland",
+  SE = "Sweden",
+  UK = "United Kingdom",
+  IS = "Iceland",
+  LI = "Liechtenstein",
+  NO = "Norway",
+  CH = "Switzerland",
+  ME = "Montenegro",
+  MK = "Macedonia",
+  AL = "Albania",
+  RS = "Serbia",
+  TR = "Turkey"
+)
+```
+
 ## Evolución de la duración de los ingresos en los distintos países
 
 Cada zona cuenta con una duración media de la hospitalización ("ALOS", por sus siglas en inglés) para cada patología para cada año. Calculamos la media de las ALOS de cada país para cada año y las representamos en un diagrama lineal.
@@ -33,7 +76,8 @@ Cada zona cuenta con una duración media de la hospitalización ("ALOS", por sus
 get_country_name <- function(country_code) {
   # Takes a NUTS code and returns the country name
   nuts0 <- str_extract(as.character(country_code), "[:alpha:][:alpha:]")
-  name <- nuts_dic[['0']][[nuts0]]
+  name <- iso_to_english[[nuts0]] # English names
+  #name <- nuts_dic[['0']][[nuts0]] # Spanish names
   return(name)
 }
 
@@ -56,18 +100,33 @@ ggplotly(p)
 Ya que la media ignora la dispersión de los datos, volvemos a representar las ALOS en forma de diagrama de cajas, agrupando esta vez por país y por sexo.
 
 ```{r, explore_distribution}
+# Create labels dictionary
+dictionaries <- list(esp = list(title = "Distribución de la duración media de los ingresos hospitalarios",
+                                subtitle = "Las unidades que forman cada distribución son los distintos años\
+                                            y regiones de cada país y sexo.",
+                                y_label = "Días",
+                                female_label = "Mujer",
+                                male_label = "Hombre"),
+                     eng = list(title = "Average lenght of stay distribution",
+                                subtitle = "Data points for each boxplot are the values for every year and region",
+                                y_label = "days",
+                                female_label = "female",
+                                male_label = "male"))
+
+# Choose lang
+dict <- dictionaries$eng
+
 len_stay <- as_tibble(len_merged_icd10)
 len_stay %>%
   filter(age == "TOTAL") %>%
   filter(sex != "T") %>%
   mutate(country = sapply(geo, get_country_name)) %>%
-  mutate(sexo=fct_recode(sex, "Mujer" = "F", "Hombre" = "M")) %>%
-  select(country, sexo, value) %>%
-  ggplot(aes(country, value, fill=sexo)) +
-        labs(title="Distribución de la duración media de los ingresos hospitalarios",
-             subtitle="Las unidades que forman cada distribución son los distintos años\
-                       y regiones de cada país y sexo.",
-             x=NULL, y="Días") + geom_boxplot() + coord_flip() + scale_y_continuous(limits = c(0, 20))
+  mutate(sex=fct_recode(sex, female = "F", male = "M")) %>%
+  select(country, sex, value) %>%
+  ggplot(aes(country, value, fill=sex)) +
+        labs(title=dict$title,
+             subtitle=dict$subtitle,
+             x=NULL, y=dict$y_label) + geom_boxplot() + coord_flip() + scale_y_continuous(limits = c(0, 20))
 ```
 
 ## Transformación para regresión lineal
@@ -203,12 +262,30 @@ models_df %>%
   mutate_at(names(models_df[2:ncol(models_df)]),
             (function (x) as.numeric(as.character(x)))) -> models_df
 
+# Define labels dictionaries
+dictionaries <- list(eng = list(title = "Weight distribution per variable\nfor length of stay linear regression",
+                              y_label = "weight",
+                              colnames = c("country", "(Intercept)","age", "females", "males", "year",
+                                           "discharges", "physicians", "nurses and midwives", "odontologists",
+                                           "pharmacists", "physiotherapist", "mortality")),
+                     esp = list(title = "Distribución del peso de cada variable sobre la\n duración media del ingreso",
+                              y_label = "Peso",
+                              colnames = c("country", "Término independiente", "Edad", "Es mujer", "Es hombre",
+                                           "Año", "Altas", "Médicos", "Enfermeras y matronas", "Dentistas",
+                                           "Farmaceuticos", "Fisioterapeutas", "Mortalidad"))
+                     )
+
+# Choose a dictionary
+dict = dictionaries$eng
+
+names(models_df) <- dict$colnames
+
 models_df %>%
   pivot_longer(!country, names_to="name", values_to="value", values_drop_na=TRUE) %>%
   mutate(value = as.numeric(as.character(value))) %>%
-  ggplot(aes(name, value)) + geom_boxplot() + coord_flip() +
-        labs(title="Distribución del peso de cada variable sobre la\n duración media del ingreso",
-             x=NULL, y="Peso")
+  ggplot(aes(name, value, fill="name")) + geom_boxplot() + coord_flip() +
+        labs(title=dict$title,
+             x=NULL, y=dict$y_label) + scale_fill_manual(values = c("lightblue")) + theme(legend.position = "none")
 ```
 
 ## Outliers
