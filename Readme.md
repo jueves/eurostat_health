@@ -6,11 +6,11 @@ Data gets downloaded from Eurostat and is labeled and grouped by merging multipl
 
 ## Findings about lenght of stay per country
 Eurostat datasets are aggregated with a minimum granularity of region for location and year for time. Therefore, each data point represents the Average Length Of Stay (ALOS) for a specific sex, year and region in a certain country.
-![boxplot per country](cajas_len_stay.png)
+![boxplot per country](ALOS_per_sex.png)
 
 ## Coeficients for the correlation model
 Data granularity is the same as in the previous plot.
-![coficients box plot](coef_boxes.png)
+![coficients box plot](ALOS_weights.png)
 
 ## Notebook
 A more detailed overview can be found in [this notebook](https://data.cobiella.es/eurostat_health.html), which is an extended version of `per_country.Rmd`
