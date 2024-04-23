@@ -232,6 +232,12 @@ for (country in country_codes) {
 }
 ```
 
+## No crear modelos
+Cargar desde archivo para acelerar la ejecución.
+```{r load_models}
+load("data/models_df.RData")
+```
+
 ## Distribución de los valores de coeficientes por países
 
 A cada país le corresponde un modelo y para una misma variable, cada país tiene un coeficiente diferente. Procedemos a mostrar la distribución de los distintos coeficientes que tenemos para cada variable.
