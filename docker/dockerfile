@@ -1,4 +1,4 @@
-FROM ghcr.io/rocker-org/ml:latest
+FROM docker.io/rocker/cuda:4.3.2
 
 RUN git clone https://github.com/jueves/eurostat_health.git
 
